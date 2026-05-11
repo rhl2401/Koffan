@@ -827,6 +827,57 @@
                  x-transition:enter="transition ease-out duration-150"
                  x-transition:enter-start="opacity-0"
                  x-transition:enter-end="opacity-100">
+
+                <!-- Group Transfer -->
+                {{if .UserGroups}}
+                <div class="mb-6" x-data="{ showTransfer: false }">
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2">Group</label>
+                    <div class="flex items-center justify-between bg-stone-50 dark:bg-stone-700 rounded-xl px-4 py-3 mb-2">
+                        {{if .List.GroupName}}
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span class="text-sm text-stone-700 dark:text-stone-200">{{.List.GroupName}}</span>
+                        </div>
+                        {{else}}
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-stone-400 dark:text-stone-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            <span class="text-sm text-stone-500 dark:text-stone-400">Private</span>
+                        </div>
+                        {{end}}
+                        <button @click="showTransfer = !showTransfer"
+                            class="text-xs text-pink-500 hover:text-pink-600 font-medium transition-colors">
+                            Change
+                        </button>
+                    </div>
+
+                    <div x-show="showTransfer" x-cloak class="space-y-1">
+                        <!-- Make private -->
+                        <form action="/lists/{{.List.ID}}/transfer" method="POST">
+                            <input type="hidden" name="group_id" value="0">
+                            <button type="submit"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors
+                                    {{if not .List.GroupID}}bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 ring-1 ring-pink-400{{else}}text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700{{end}}">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                Private (only me)
+                            </button>
+                        </form>
+                        <!-- Each group -->
+                        {{range .UserGroups}}
+                        <form action="/lists/{{$.List.ID}}/transfer" method="POST">
+                            <input type="hidden" name="group_id" value="{{.ID}}">
+                            <button type="submit"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors
+                                    {{if eq $.List.GroupID .ID}}bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 ring-1 ring-pink-400{{else}}text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700{{end}}">
+                                <svg class="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                {{.Name}}
+                            </button>
+                        </form>
+                        {{end}}
+                    </div>
+                </div>
+                <div class="border-t border-stone-100 dark:border-stone-700 mb-6"></div>
+                {{end}}
+
                 <!-- History section mapping mode -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-3" x-text="t('settings.history_section_mode')"></label>

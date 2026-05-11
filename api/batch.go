@@ -97,7 +97,7 @@ func batchCreateNewList(c *fiber.Ctx, req BatchCreateRequest) error {
 
 	// Create list
 	icon := NormalizeIcon(req.List.Icon)
-	list, err := db.CreateListTx(tx, req.List.Name, icon)
+	list, err := db.CreateListTx(tx, req.List.Name, icon, 0)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "create_failed",
@@ -164,7 +164,7 @@ func batchCreateNewList(c *fiber.Ctx, req BatchCreateRequest) error {
 // batchAddToList adds sections and items to an existing list
 func batchAddToList(c *fiber.Ctx, req BatchCreateRequest) error {
 	// Check if list exists
-	_, err := db.GetListByID(req.ListID)
+	_, err := db.GetListByID(req.ListID, 0)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{

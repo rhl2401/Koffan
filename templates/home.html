@@ -9,6 +9,35 @@
                     <img src="/static/koffan-logo.webp" alt="Koffan Logo" class="h-12">
                 </a>
 
+                <!-- Header right: user + settings -->
+                <div class="flex items-center gap-2">
+                {{if .CurrentUser.Name}}
+                <!-- User menu -->
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open" class="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100 rounded-lg px-2 py-1 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
+                        {{if .CurrentUser.AvatarURL}}
+                        <img src="{{.CurrentUser.AvatarURL}}" alt="" class="w-6 h-6 rounded-full">
+                        {{else}}
+                        <span class="w-6 h-6 rounded-full bg-pink-400 flex items-center justify-center text-white text-xs font-bold">{{slice .CurrentUser.Name 0 1}}</span>
+                        {{end}}
+                        <span class="hidden sm:block max-w-[120px] truncate">{{.CurrentUser.Name}}</span>
+                    </button>
+                    <div x-show="open" @click.outside="open = false" x-cloak
+                         class="absolute right-0 mt-1 w-48 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg z-50 overflow-hidden">
+                        <a href="/groups" class="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            Groups
+                        </a>
+                        <form action="/logout" method="POST">
+                            <button type="submit" class="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {{end}}
+
                 <!-- Settings -->
                 <button
                     @click="showSettings = true"
@@ -20,11 +49,34 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                 </button>
+                </div><!-- end flex gap-2 -->
             </div>
         </div>
     </header>
 
     <div class="container mx-auto px-4 max-w-4xl pb-24">
+
+        {{if .PendingInvites}}
+        <!-- Pending group invites banner -->
+        <div class="mb-4 space-y-2">
+            {{range .PendingInvites}}
+            <div class="flex items-center justify-between bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-xl px-4 py-3">
+                <p class="text-sm text-stone-700 dark:text-stone-200">
+                    <strong>{{.InviterName}}</strong> invited you to join <strong>{{.GroupName}}</strong>
+                </p>
+                <div class="flex gap-2 ml-4">
+                    <form action="/invites/{{.ID}}/accept" method="POST">
+                        <button type="submit" class="text-xs bg-pink-400 hover:bg-pink-500 text-white rounded-lg px-3 py-1.5 transition-colors">Accept</button>
+                    </form>
+                    <form action="/invites/{{.ID}}/decline" method="POST">
+                        <button type="submit" class="text-xs text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 border border-stone-200 dark:border-stone-600 rounded-lg px-3 py-1.5 transition-colors">Decline</button>
+                    </form>
+                </div>
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+
         {{if .Lists}}
         <!-- Lists exist - show them -->
         <div class="mb-6">
@@ -46,7 +98,20 @@
                     <!-- Info (clickable) -->
                     <a href="/lists/{{$list.ID}}" class="flex-1 min-w-0">
                         <p class="font-medium text-stone-800 dark:text-stone-100 truncate">{{$list.Name}}</p>
-                        <p class="text-sm text-stone-400 dark:text-stone-500" data-stats-count>{{$list.Stats.CompletedItems}}/{{$list.Stats.TotalItems}} <span x-text="t('list.completed')"></span></p>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p class="text-sm text-stone-400 dark:text-stone-500" data-stats-count>{{$list.Stats.CompletedItems}}/{{$list.Stats.TotalItems}} <span x-text="t('list.completed')"></span></p>
+                            {{if $list.GroupName}}
+                            <span class="inline-flex items-center gap-1 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                {{$list.GroupName}}
+                            </span>
+                            {{else}}
+                            <span class="inline-flex items-center gap-1 text-xs text-stone-400 dark:text-stone-500">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                Private
+                            </span>
+                            {{end}}
+                        </div>
                     </a>
 
                     <!-- Progress -->
@@ -106,6 +171,14 @@
                                     </svg>
                                     <span x-text="t('common.edit')"></span>
                                 </button>
+                                <a
+                                    href="/lists/{{$list.ID}}"
+                                    class="w-full px-4 py-2.5 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-center gap-3"
+                                    @click="showActions = false"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    Transfer to group
+                                </a>
                                 <button
                                     @click="showActions = false; deleteList({{$list.ID}}, '{{$list.Name | js}}')"
                                     class="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-3"

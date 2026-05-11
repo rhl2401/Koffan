@@ -12,6 +12,21 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// GetCurrentUser retrieves the authenticated user from Fiber locals.
+func GetCurrentUser(c *fiber.Ctx) (db.User, bool) {
+	user, ok := c.Locals("user").(db.User)
+	return user, ok
+}
+
+// GetCurrentUserID returns the current user's ID (0 if not authenticated or auth disabled).
+func GetCurrentUserID(c *fiber.Ctx) int64 {
+	user, ok := GetCurrentUser(c)
+	if !ok {
+		return 0
+	}
+	return user.ID
+}
+
 const (
 	SessionCookieName = "session"
 	SessionDuration   = 7 * 24 * time.Hour // 7 days
@@ -59,10 +74,13 @@ func LoginPage(c *fiber.Ctx) error {
 		}
 	}
 	return c.Render("login", fiber.Map{
-		"Error":        c.Query("error"),
-		"Translations": i18n.GetAllLocales(),
-		"Locales":      i18n.AvailableLocales(),
-		"DefaultLang":  i18n.GetDefaultLang(),
+		"Error":            c.Query("error"),
+		"Translations":     i18n.GetAllLocales(),
+		"Locales":          i18n.AvailableLocales(),
+		"DefaultLang":      i18n.GetDefaultLang(),
+		"GoogleEnabled":    os.Getenv("GOOGLE_CLIENT_ID") != "",
+		"MicrosoftEnabled": os.Getenv("MICROSOFT_CLIENT_ID") != "",
+		"PocketIDEnabled":  os.Getenv("POCKETID_CLIENT_ID") != "",
 	}, "")
 }
 
@@ -75,7 +93,6 @@ func Login(c *fiber.Ctx) error {
 		// Record failed attempt
 		if loginLimiter != nil {
 			if loginLimiter.RecordAttempt(ip) {
-				// Limit exceeded, redirect with rate_limited error
 				return c.Redirect("/login?error=rate_limited")
 			}
 		}
@@ -87,11 +104,28 @@ func Login(c *fiber.Ctx) error {
 		loginLimiter.ResetAttempts(ip)
 	}
 
+	// Find or create the local admin user
+	localUser, err := db.GetOrCreateLocalUser()
+	if err != nil {
+		log.Printf("[AUTH] Failed to get/create local user: %v", err)
+		return sendError(c, 500, "error.session_failed")
+	}
+
+	// Add local user to Shared group so they see legacy lists
+	db.AddAllUsersToSharedGroup()
+
+	// Accept any pending invites for local admin (by email)
+	if invites, err := db.GetPendingInvitesForEmail(localUser.Email); err == nil {
+		for _, inv := range invites {
+			db.AcceptGroupInvite(inv.ID, localUser.ID)
+		}
+	}
+
 	// Create session
 	sessionID := generateSessionID()
 	expiresAt := time.Now().Add(SessionDuration).Unix()
 
-	err := db.CreateSession(sessionID, expiresAt)
+	err = db.CreateSession(sessionID, expiresAt, localUser.ID)
 	if err != nil {
 		return sendError(c, 500, "error.session_failed")
 	}
@@ -200,6 +234,13 @@ func AuthMiddleware(c *fiber.Ctx) error {
 			return c.SendStatus(401)
 		}
 		return c.Redirect("/login")
+	}
+
+	// Load user from session and store in locals
+	if session.UserID > 0 {
+		if user, err := db.GetUserByID(session.UserID); err == nil {
+			c.Locals("user", *user)
+		}
 	}
 
 	return c.Next()

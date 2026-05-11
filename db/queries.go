@@ -34,10 +34,52 @@ type Item struct {
 	UpdatedAt   int64     `json:"updated_at"`
 }
 
+// User represents an authenticated user
+type User struct {
+	ID         int64     `json:"id"`
+	Provider   string    `json:"provider"`
+	ProviderID string    `json:"provider_id"`
+	Email      string    `json:"email"`
+	Name       string    `json:"name"`
+	AvatarURL  string    `json:"avatar_url"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  int64     `json:"updated_at"`
+}
+
+// Group represents a user group for list sharing
+type Group struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedBy int64     `json:"created_by"`
+	CreatedAt time.Time `json:"created_at"`
+	Role      string    `json:"role"` // populated on per-user queries: 'owner' or 'member'
+}
+
+// GroupMember is a user's membership in a group
+type GroupMember struct {
+	GroupID  int64     `json:"group_id"`
+	UserID   int64     `json:"user_id"`
+	Role     string    `json:"role"`
+	Name     string    `json:"name"`
+	Email    string    `json:"email"`
+	JoinedAt time.Time `json:"joined_at"`
+}
+
+// GroupInvite is a pending invitation to join a group
+type GroupInvite struct {
+	ID          int64     `json:"id"`
+	GroupID     int64     `json:"group_id"`
+	GroupName   string    `json:"group_name"`
+	InviterName string    `json:"inviter_name"`
+	Email       string    `json:"email"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 // Session represents a user session
 type Session struct {
 	ID        string
 	ExpiresAt int64
+	UserID    int64
 }
 
 // List represents a shopping list
@@ -48,6 +90,9 @@ type List struct {
 	SortOrder     int       `json:"sort_order"`
 	IsActive      bool      `json:"is_active"`
 	ShowCompleted bool      `json:"show_completed"`
+	OwnerID       int64     `json:"owner_id"`
+	GroupID       int64     `json:"group_id"`
+	GroupName     string    `json:"group_name"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     int64     `json:"updated_at"`
 	Stats         Stats     `json:"stats,omitempty"`
@@ -80,13 +125,32 @@ type TemplateItem struct {
 // listSelectWithStats is a shared SELECT that joins lists with aggregated item stats in a single query.
 const listSelectWithStats = `
 	SELECT l.id, l.name, COALESCE(l.icon, '🛒'), l.sort_order, l.is_active,
-	       COALESCE(l.show_completed, TRUE), l.created_at, COALESCE(l.updated_at, 0),
+	       COALESCE(l.show_completed, TRUE),
+	       COALESCE(l.owner_id, 0), COALESCE(l.group_id, 0), COALESCE(g.name, ''),
+	       l.created_at, COALESCE(l.updated_at, 0),
 	       COALESCE(COUNT(i.id), 0) AS total_items,
 	       COALESCE(SUM(CASE WHEN i.completed = TRUE THEN 1 ELSE 0 END), 0) AS completed_items
 	FROM lists l
+	LEFT JOIN groups g ON g.id = l.group_id
 	LEFT JOIN sections s ON s.list_id = l.id
 	LEFT JOIN items i ON i.section_id = s.id
 `
+
+// listAccessWhere returns the WHERE clause (and args) for filtering lists by user access.
+// userID == 0 means no filtering (API/admin access).
+func listAccessWhere(userID int64) (string, []interface{}) {
+	if userID == 0 {
+		return "", nil
+	}
+	where := `WHERE (
+		(COALESCE(l.owner_id, 0) = ? AND (l.group_id IS NULL OR l.group_id = 0))
+		OR
+		(COALESCE(l.group_id, 0) > 0 AND l.group_id IN (
+			SELECT group_id FROM group_members WHERE user_id = ?
+		))
+	)`
+	return where, []interface{}{userID, userID}
+}
 
 // scanListWithStats scans one row produced by listSelectWithStats and populates stats.
 func scanListWithStats(scanner interface {
@@ -94,7 +158,8 @@ func scanListWithStats(scanner interface {
 }) (List, error) {
 	var l List
 	var total, completed int
-	if err := scanner.Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt, &total, &completed); err != nil {
+	if err := scanner.Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted,
+		&l.OwnerID, &l.GroupID, &l.GroupName, &l.CreatedAt, &l.UpdatedAt, &total, &completed); err != nil {
 		return l, err
 	}
 	l.Stats.TotalItems = total
@@ -105,12 +170,14 @@ func scanListWithStats(scanner interface {
 	return l, nil
 }
 
-// GetAllLists returns all shopping lists with their stats (single query with GROUP BY).
-func GetAllLists() ([]List, error) {
-	rows, err := DB.Query(listSelectWithStats + `
+// GetAllLists returns lists visible to userID (0 = all lists, no filter).
+func GetAllLists(userID int64) ([]List, error) {
+	where, args := listAccessWhere(userID)
+	query := listSelectWithStats + where + `
 		GROUP BY l.id
 		ORDER BY l.sort_order ASC
-	`)
+	`
+	rows, err := DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,12 +194,17 @@ func GetAllLists() ([]List, error) {
 	return lists, nil
 }
 
-// GetListByID returns a single list by ID with stats.
-func GetListByID(id int64) (*List, error) {
-	row := DB.QueryRow(listSelectWithStats+`
-		WHERE l.id = ?
-		GROUP BY l.id
-	`, id)
+// GetListByID returns a single list by ID. If userID > 0 and the user has no access, returns sql.ErrNoRows.
+func GetListByID(id, userID int64) (*List, error) {
+	where, args := listAccessWhere(userID)
+	if where == "" {
+		where = "WHERE l.id = ?"
+		args = []interface{}{id}
+	} else {
+		where += " AND l.id = ?"
+		args = append(args, id)
+	}
+	row := DB.QueryRow(listSelectWithStats+where+` GROUP BY l.id`, args...)
 	l, err := scanListWithStats(row)
 	if err != nil {
 		return nil, err
@@ -140,13 +212,17 @@ func GetListByID(id int64) (*List, error) {
 	return &l, nil
 }
 
-// GetActiveList returns the currently active list with stats.
-func GetActiveList() (*List, error) {
-	row := DB.QueryRow(listSelectWithStats + `
-		WHERE l.is_active = TRUE
+// GetActiveList returns the currently active list visible to userID.
+func GetActiveList(userID int64) (*List, error) {
+	where, args := listAccessWhere(userID)
+	activeClause := "WHERE l.is_active = TRUE"
+	if where != "" {
+		activeClause += " AND " + where[len("WHERE "):]
+	}
+	row := DB.QueryRow(listSelectWithStats+activeClause+`
 		GROUP BY l.id
 		LIMIT 1
-	`)
+	`, args...)
 	l, err := scanListWithStats(row)
 	if err != nil {
 		return nil, err
@@ -154,8 +230,40 @@ func GetActiveList() (*List, error) {
 	return &l, nil
 }
 
-// CreateList creates a new shopping list
-func CreateList(name, icon string) (*List, error) {
+// UserCanAccessList returns true if userID can read/write listID.
+// userID == 0 always returns true (API/admin access).
+func UserCanAccessList(userID, listID int64) bool {
+	if userID == 0 {
+		return true
+	}
+	var count int
+	DB.QueryRow(`
+		SELECT COUNT(*) FROM lists l
+		WHERE l.id = ? AND (
+			(COALESCE(l.owner_id, 0) = ? AND (l.group_id IS NULL OR l.group_id = 0))
+			OR
+			(COALESCE(l.group_id, 0) > 0 AND l.group_id IN (
+				SELECT group_id FROM group_members WHERE user_id = ?
+			))
+		)
+	`, listID, userID, userID).Scan(&count)
+	return count > 0
+}
+
+// UserCanAccessSection returns true if userID can access the list containing sectionID.
+func UserCanAccessSection(userID, sectionID int64) bool {
+	if userID == 0 {
+		return true
+	}
+	var listID int64
+	if err := DB.QueryRow("SELECT list_id FROM sections WHERE id = ?", sectionID).Scan(&listID); err != nil {
+		return false
+	}
+	return UserCanAccessList(userID, listID)
+}
+
+// CreateList creates a new shopping list owned by ownerID.
+func CreateList(name, icon string, ownerID int64) (*List, error) {
 	var maxOrder int
 	DB.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM lists").Scan(&maxOrder)
 
@@ -164,14 +272,14 @@ func CreateList(name, icon string) (*List, error) {
 	}
 
 	result, err := DB.Exec(`
-		INSERT INTO lists (name, icon, sort_order, is_active) VALUES (?, ?, ?, FALSE)
-	`, name, icon, maxOrder+1)
+		INSERT INTO lists (name, icon, sort_order, is_active, owner_id) VALUES (?, ?, ?, FALSE, ?)
+	`, name, icon, maxOrder+1, ownerID)
 	if err != nil {
 		return nil, err
 	}
 
 	id, _ := result.LastInsertId()
-	return GetListByID(id)
+	return GetListByID(id, 0)
 }
 
 // ListNameExists checks if a list with the given name already exists (case-insensitive)
@@ -352,10 +460,9 @@ func GetListStats(listID int64) Stats {
 
 // ==================== SECTIONS ====================
 
-func GetAllSections() ([]Section, error) {
-	activeList, err := GetActiveList()
+func GetAllSections(userID int64) ([]Section, error) {
+	activeList, err := GetActiveList(userID)
 	if err != nil {
-		// Fallback: return all sections if no active list (shouldn't happen)
 		return getAllSectionsGlobal()
 	}
 	return GetSectionsByList(activeList.ID)
@@ -447,8 +554,8 @@ func GetSectionByID(id int64) (*Section, error) {
 	return &s, nil
 }
 
-func CreateSection(name string) (*Section, error) {
-	activeList, err := GetActiveList()
+func CreateSection(name string, userID int64) (*Section, error) {
+	activeList, err := GetActiveList(userID)
 	if err != nil {
 		return nil, fmt.Errorf("no active list found")
 	}
@@ -755,8 +862,8 @@ func DeleteItem(id int64) error {
 }
 
 // DeleteCompletedItems deletes all completed items from the active list
-func DeleteCompletedItems() (int64, error) {
-	activeList, err := GetActiveList()
+func DeleteCompletedItems(userID int64) (int64, error) {
+	activeList, err := GetActiveList(userID)
 	if err != nil {
 		return 0, err
 	}
@@ -1066,14 +1173,14 @@ func MoveItemDown(id int64) error {
 
 // ==================== SESSIONS ====================
 
-func CreateSession(id string, expiresAt int64) error {
-	_, err := DB.Exec(`INSERT INTO sessions (id, expires_at) VALUES (?, ?)`, id, expiresAt)
+func CreateSession(id string, expiresAt, userID int64) error {
+	_, err := DB.Exec(`INSERT INTO sessions (id, expires_at, user_id) VALUES (?, ?, ?)`, id, expiresAt, userID)
 	return err
 }
 
 func GetSession(id string) (*Session, error) {
 	var s Session
-	err := DB.QueryRow(`SELECT id, expires_at FROM sessions WHERE id = ?`, id).Scan(&s.ID, &s.ExpiresAt)
+	err := DB.QueryRow(`SELECT id, expires_at, COALESCE(user_id, 0) FROM sessions WHERE id = ?`, id).Scan(&s.ID, &s.ExpiresAt, &s.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -1098,10 +1205,9 @@ type Stats struct {
 	Percentage     int `json:"percentage"`
 }
 
-func GetStats() Stats {
-	activeList, err := GetActiveList()
+func GetStats(userID int64) Stats {
+	activeList, err := GetActiveList(userID)
 	if err != nil {
-		// Fallback to global stats
 		return getGlobalStats()
 	}
 	return GetListStats(activeList.ID)
@@ -1727,7 +1833,7 @@ func CreateTemplateFromList(listID int64, templateName, templateDescription stri
 // ==================== TRANSACTION HELPERS (for batch API) ====================
 
 // CreateListTx creates a list within a transaction
-func CreateListTx(tx *sql.Tx, name, icon string) (*List, error) {
+func CreateListTx(tx *sql.Tx, name, icon string, ownerID int64) (*List, error) {
 	var maxOrder int
 	tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM lists").Scan(&maxOrder)
 
@@ -1736,8 +1842,8 @@ func CreateListTx(tx *sql.Tx, name, icon string) (*List, error) {
 	}
 
 	result, err := tx.Exec(`
-		INSERT INTO lists (name, icon, sort_order, is_active) VALUES (?, ?, ?, FALSE)
-	`, name, icon, maxOrder+1)
+		INSERT INTO lists (name, icon, sort_order, is_active, owner_id) VALUES (?, ?, ?, FALSE, ?)
+	`, name, icon, maxOrder+1, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -1746,9 +1852,12 @@ func CreateListTx(tx *sql.Tx, name, icon string) (*List, error) {
 
 	var l List
 	err = tx.QueryRow(`
-		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, created_at, COALESCE(updated_at, 0)
+		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active,
+		       COALESCE(show_completed, TRUE), COALESCE(owner_id, 0), COALESCE(group_id, 0), '',
+		       created_at, COALESCE(updated_at, 0)
 		FROM lists WHERE id = ?
-	`, id).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.CreatedAt, &l.UpdatedAt)
+	`, id).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted,
+		&l.OwnerID, &l.GroupID, &l.GroupName, &l.CreatedAt, &l.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -1860,6 +1969,292 @@ func GetSectionNameForItem(itemName string) string {
 		return ""
 	}
 	return sectionName
+}
+
+// ==================== USERS ====================
+
+func GetOrCreateUser(provider, providerID, email, name, avatarURL string) (*User, error) {
+	var u User
+	err := DB.QueryRow(`
+		SELECT id, provider, provider_id, email, name, avatar_url, created_at, COALESCE(updated_at, 0)
+		FROM users WHERE provider = ? AND provider_id = ?
+	`, provider, providerID).Scan(&u.ID, &u.Provider, &u.ProviderID, &u.Email, &u.Name, &u.AvatarURL, &u.CreatedAt, &u.UpdatedAt)
+	if err == nil {
+		// Update name/email/avatar in case they changed at provider
+		DB.Exec(`UPDATE users SET email = ?, name = ?, avatar_url = ?, updated_at = strftime('%s', 'now') WHERE id = ?`,
+			email, name, avatarURL, u.ID)
+		u.Email = email
+		u.Name = name
+		u.AvatarURL = avatarURL
+		return &u, nil
+	}
+	result, err := DB.Exec(`
+		INSERT INTO users (provider, provider_id, email, name, avatar_url) VALUES (?, ?, ?, ?, ?)
+	`, provider, providerID, email, name, avatarURL)
+	if err != nil {
+		return nil, err
+	}
+	id, _ := result.LastInsertId()
+	return GetUserByID(id)
+}
+
+func GetOrCreateLocalUser() (*User, error) {
+	return GetOrCreateUser("local", "admin", "admin@local", "Admin", "")
+}
+
+func GetUserByID(id int64) (*User, error) {
+	var u User
+	err := DB.QueryRow(`
+		SELECT id, provider, provider_id, email, name, avatar_url, created_at, COALESCE(updated_at, 0)
+		FROM users WHERE id = ?
+	`, id).Scan(&u.ID, &u.Provider, &u.ProviderID, &u.Email, &u.Name, &u.AvatarURL, &u.CreatedAt, &u.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func GetUserByEmail(email string) (*User, error) {
+	var u User
+	err := DB.QueryRow(`
+		SELECT id, provider, provider_id, email, name, avatar_url, created_at, COALESCE(updated_at, 0)
+		FROM users WHERE email = ? COLLATE NOCASE LIMIT 1
+	`, email).Scan(&u.ID, &u.Provider, &u.ProviderID, &u.Email, &u.Name, &u.AvatarURL, &u.CreatedAt, &u.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+// ==================== GROUPS ====================
+
+func CreateGroup(name string, ownerID int64) (*Group, error) {
+	result, err := DB.Exec(`INSERT INTO groups (name, created_by) VALUES (?, ?)`, name, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	groupID, _ := result.LastInsertId()
+	// Add creator as owner
+	_, err = DB.Exec(`INSERT INTO group_members (group_id, user_id, role) VALUES (?, ?, 'owner')`, groupID, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	return GetGroupByID(groupID, ownerID)
+}
+
+func GetGroupByID(id, userID int64) (*Group, error) {
+	var g Group
+	err := DB.QueryRow(`
+		SELECT g.id, g.name, g.created_by, g.created_at,
+		       COALESCE((SELECT role FROM group_members WHERE group_id = g.id AND user_id = ?), '')
+		FROM groups g WHERE g.id = ?
+	`, userID, id).Scan(&g.ID, &g.Name, &g.CreatedBy, &g.CreatedAt, &g.Role)
+	if err != nil {
+		return nil, err
+	}
+	return &g, nil
+}
+
+func GetGroupsForUser(userID int64) ([]Group, error) {
+	rows, err := DB.Query(`
+		SELECT g.id, g.name, g.created_by, g.created_at, gm.role
+		FROM groups g
+		JOIN group_members gm ON gm.group_id = g.id AND gm.user_id = ?
+		ORDER BY g.name ASC
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var groups []Group
+	for rows.Next() {
+		var g Group
+		if err := rows.Scan(&g.ID, &g.Name, &g.CreatedBy, &g.CreatedAt, &g.Role); err != nil {
+			return nil, err
+		}
+		groups = append(groups, g)
+	}
+	return groups, nil
+}
+
+func UpdateGroup(id int64, name string) error {
+	_, err := DB.Exec(`UPDATE groups SET name = ? WHERE id = ?`, name, id)
+	return err
+}
+
+func DeleteGroup(id int64) error {
+	_, err := DB.Exec(`DELETE FROM groups WHERE id = ?`, id)
+	return err
+}
+
+func IsGroupOwner(groupID, userID int64) bool {
+	var role string
+	DB.QueryRow(`SELECT role FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, userID).Scan(&role)
+	return role == "owner"
+}
+
+func IsGroupMember(groupID, userID int64) bool {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, userID).Scan(&count)
+	return count > 0
+}
+
+// ==================== GROUP MEMBERS ====================
+
+func GetGroupMembers(groupID int64) ([]GroupMember, error) {
+	rows, err := DB.Query(`
+		SELECT gm.group_id, gm.user_id, gm.role, u.name, u.email, gm.joined_at
+		FROM group_members gm
+		JOIN users u ON u.id = gm.user_id
+		WHERE gm.group_id = ?
+		ORDER BY gm.role DESC, u.name ASC
+	`, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var members []GroupMember
+	for rows.Next() {
+		var m GroupMember
+		if err := rows.Scan(&m.GroupID, &m.UserID, &m.Role, &m.Name, &m.Email, &m.JoinedAt); err != nil {
+			return nil, err
+		}
+		members = append(members, m)
+	}
+	return members, nil
+}
+
+func AddGroupMember(groupID, userID int64, role string) error {
+	_, err := DB.Exec(`
+		INSERT OR REPLACE INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)
+	`, groupID, userID, role)
+	return err
+}
+
+func RemoveGroupMember(groupID, userID int64) error {
+	_, err := DB.Exec(`DELETE FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, userID)
+	return err
+}
+
+// AddAllUsersToSharedGroup adds all existing users to the Shared group (created_by = 0).
+func AddAllUsersToSharedGroup() {
+	var groupID int64
+	if err := DB.QueryRow("SELECT id FROM groups WHERE name = 'Shared' AND created_by = 0").Scan(&groupID); err != nil {
+		return
+	}
+	DB.Exec(`
+		INSERT OR IGNORE INTO group_members (group_id, user_id, role)
+		SELECT ?, id, 'member' FROM users
+	`, groupID)
+}
+
+// ==================== GROUP INVITES ====================
+
+func CreateGroupInvite(groupID, inviterID int64, email string) error {
+	// Check if user already exists → add directly
+	existing, err := GetUserByEmail(email)
+	if err == nil && existing != nil {
+		return AddGroupMember(groupID, existing.ID, "member")
+	}
+	_, err = DB.Exec(`
+		INSERT OR IGNORE INTO group_invites (group_id, invited_by, email) VALUES (?, ?, ?)
+	`, groupID, inviterID, email)
+	return err
+}
+
+func GetPendingInvitesForEmail(email string) ([]GroupInvite, error) {
+	rows, err := DB.Query(`
+		SELECT gi.id, gi.group_id, g.name, u.name, gi.email, gi.created_at
+		FROM group_invites gi
+		JOIN groups g ON g.id = gi.group_id
+		JOIN users u ON u.id = gi.invited_by
+		WHERE gi.email = ? COLLATE NOCASE
+	`, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var invites []GroupInvite
+	for rows.Next() {
+		var inv GroupInvite
+		if err := rows.Scan(&inv.ID, &inv.GroupID, &inv.GroupName, &inv.InviterName, &inv.Email, &inv.CreatedAt); err != nil {
+			return nil, err
+		}
+		invites = append(invites, inv)
+	}
+	return invites, nil
+}
+
+func GetGroupInviteByID(id int64) (*GroupInvite, error) {
+	var inv GroupInvite
+	err := DB.QueryRow(`
+		SELECT gi.id, gi.group_id, g.name, u.name, gi.email, gi.created_at
+		FROM group_invites gi
+		JOIN groups g ON g.id = gi.group_id
+		JOIN users u ON u.id = gi.invited_by
+		WHERE gi.id = ?
+	`, id).Scan(&inv.ID, &inv.GroupID, &inv.GroupName, &inv.InviterName, &inv.Email, &inv.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &inv, nil
+}
+
+func AcceptGroupInvite(inviteID, userID int64) error {
+	inv, err := GetGroupInviteByID(inviteID)
+	if err != nil {
+		return err
+	}
+	if err := AddGroupMember(inv.GroupID, userID, "member"); err != nil {
+		return err
+	}
+	_, err = DB.Exec(`DELETE FROM group_invites WHERE id = ?`, inviteID)
+	return err
+}
+
+func DeclineGroupInvite(inviteID int64) error {
+	_, err := DB.Exec(`DELETE FROM group_invites WHERE id = ?`, inviteID)
+	return err
+}
+
+func GetGroupInvites(groupID int64) ([]GroupInvite, error) {
+	rows, err := DB.Query(`
+		SELECT gi.id, gi.group_id, g.name, u.name, gi.email, gi.created_at
+		FROM group_invites gi
+		JOIN groups g ON g.id = gi.group_id
+		JOIN users u ON u.id = gi.invited_by
+		WHERE gi.group_id = ?
+		ORDER BY gi.created_at DESC
+	`, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var invites []GroupInvite
+	for rows.Next() {
+		var inv GroupInvite
+		if err := rows.Scan(&inv.ID, &inv.GroupID, &inv.GroupName, &inv.InviterName, &inv.Email, &inv.CreatedAt); err != nil {
+			return nil, err
+		}
+		invites = append(invites, inv)
+	}
+	return invites, nil
+}
+
+// ==================== LIST TRANSFER ====================
+
+// TransferListToGroup moves a list to a group (groupID = 0 makes it private).
+func TransferListToGroup(listID, groupID, ownerID int64) error {
+	if groupID == 0 {
+		_, err := DB.Exec(`UPDATE lists SET group_id = 0, owner_id = ?, updated_at = strftime('%s', 'now') WHERE id = ?`, ownerID, listID)
+		return err
+	}
+	_, err := DB.Exec(`UPDATE lists SET group_id = ?, updated_at = strftime('%s', 'now') WHERE id = ?`, groupID, listID)
+	return err
 }
 
 // ==================== DATABASE CLEAR ====================

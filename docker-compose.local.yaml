@@ -8,6 +8,19 @@ services:
       - APP_PASSWORD=${APP_PASSWORD:-shopping123}
       - PORT=8080
       - DB_PATH=/data/shopping.db
+      - DEFAULT_LANG=${DEFAULT_LANG:-en}
+      - API_TOKEN=${API_TOKEN:-}
+      # OAuth — Google (leave blank to disable)
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      # OAuth — Microsoft / Entra (leave blank to disable)
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
+      - MICROSOFT_TENANT=${MICROSOFT_TENANT:-common}
+      # OAuth — PocketID (leave blank to disable)
+      - POCKETID_URL=${POCKETID_URL:-}
+      - POCKETID_CLIENT_ID=${POCKETID_CLIENT_ID:-}
+      - POCKETID_CLIENT_SECRET=${POCKETID_CLIENT_SECRET:-}
     volumes:
       - shopping-data:/data
     restart: unless-stopped

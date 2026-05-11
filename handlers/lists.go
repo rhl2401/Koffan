@@ -23,36 +23,47 @@ const (
 
 // GetListsPage returns the homepage with all lists
 func GetListsPage(c *fiber.Ctx) error {
-	lists, err := db.GetAllLists()
+	userID := GetCurrentUserID(c)
+	user, _ := GetCurrentUser(c)
+
+	lists, err := db.GetAllLists(userID)
 	if err != nil {
 		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	templates, _ := db.GetAllTemplates()
 
+	var pendingInvites []db.GroupInvite
+	if userID > 0 {
+		pendingInvites = GetPendingInvites(userID)
+	}
+
 	return c.Render("home", fiber.Map{
-		"Lists":        lists,
-		"Templates":    templates,
-		"Translations": i18n.GetAllLocales(),
-		"Locales":      i18n.AvailableLocales(),
-		"DefaultLang":  i18n.GetDefaultLang(),
+		"CurrentUser":    user,
+		"Lists":          lists,
+		"Templates":      templates,
+		"PendingInvites": pendingInvites,
+		"Translations":   i18n.GetAllLocales(),
+		"Locales":        i18n.AvailableLocales(),
+		"DefaultLang":    i18n.GetDefaultLang(),
 	})
 }
 
 // GetListView returns a single list with its items
 func GetListView(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
+	user, _ := GetCurrentUser(c)
+
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return c.Redirect("/")
 	}
 
-	list, err := db.GetListByID(id)
+	list, err := db.GetListByID(id, userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// List not found - redirect to home
 			return c.Redirect("/")
 		}
-		// Database error - log and show error
 		log.Printf("Error fetching list %d: %v", id, err)
 		return sendError(c, 500, "error.database_error")
 	}
@@ -66,14 +77,21 @@ func GetListView(c *fiber.Ctx) error {
 	}
 
 	stats := db.GetListStats(id)
-	lists, _ := db.GetAllLists()
+	lists, _ := db.GetAllLists(userID)
+
+	var userGroups []db.Group
+	if userID > 0 {
+		userGroups, _ = db.GetGroupsForUser(userID)
+	}
 
 	return c.Render("list", fiber.Map{
+		"CurrentUser":   user,
 		"List":          list,
 		"Lists":         lists,
 		"Sections":      sections,
 		"Stats":         stats,
 		"ShowCompleted": list.ShowCompleted,
+		"UserGroups":    userGroups,
 		"Translations":  i18n.GetAllLocales(),
 		"Locales":       i18n.AvailableLocales(),
 		"DefaultLang":   i18n.GetDefaultLang(),
@@ -82,17 +100,16 @@ func GetListView(c *fiber.Ctx) error {
 
 // GetLists returns all lists (JSON API)
 func GetLists(c *fiber.Ctx) error {
-	lists, err := db.GetAllLists()
+	userID := GetCurrentUserID(c)
+	lists, err := db.GetAllLists(userID)
 	if err != nil {
 		return sendError(c, 500, "error.fetch_failed")
 	}
 
-	// Check if JSON format is requested
 	if c.Query("format") == "json" {
 		return c.JSON(lists)
 	}
 
-	// For HTML, redirect to homepage
 	return c.Redirect("/")
 }
 
@@ -126,7 +143,8 @@ func CreateList(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.icon_too_long")
 	}
 
-	list, err := db.CreateList(name, icon)
+	ownerID := GetCurrentUserID(c)
+	list, err := db.CreateList(name, icon, ownerID)
 	if err != nil {
 		return sendError(c, 500, "error.create_failed")
 	}
@@ -142,9 +160,13 @@ func CreateList(c *fiber.Ctx) error {
 
 // UpdateList updates a list's name and icon
 func UpdateList(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return sendError(c, 400, "error.invalid_id")
+	}
+	if !db.UserCanAccessList(userID, id) {
+		return sendError(c, 403, "error.forbidden")
 	}
 
 	name := c.FormValue("name")
@@ -188,9 +210,13 @@ func UpdateList(c *fiber.Ctx) error {
 
 // DeleteList deletes a shopping list
 func DeleteList(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return sendError(c, 400, "error.invalid_id")
+	}
+	if !db.UserCanAccessList(userID, id) {
+		return sendError(c, 403, "error.forbidden")
 	}
 
 	err = db.DeleteList(id)
@@ -274,17 +300,59 @@ func MoveListDown(c *fiber.Ctx) error {
 
 // Helper to return all lists as HTML partials
 func returnAllLists(c *fiber.Ctx) error {
-	lists, err := db.GetAllLists()
+	userID := GetCurrentUserID(c)
+	lists, err := db.GetAllLists(userID)
 	if err != nil {
 		return sendError(c, 500, "error.fetch_failed")
 	}
 
-	activeList, _ := db.GetActiveList()
+	activeList, _ := db.GetActiveList(userID)
 
 	return c.Render("partials/lists_container", fiber.Map{
 		"Lists":      lists,
 		"ActiveList": activeList,
 	}, "")
+}
+
+// TransferListToGroup moves a list to a group (or makes it private with group_id=0).
+func TransferListToGroup(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
+	listID, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return sendError(c, 400, "error.invalid_id")
+	}
+
+	if !db.UserCanAccessList(userID, listID) {
+		return sendError(c, 403, "error.forbidden")
+	}
+
+	groupIDStr := c.FormValue("group_id")
+	groupID, _ := strconv.ParseInt(groupIDStr, 10, 64)
+
+	// When making private, verify user is the owner
+	if groupID == 0 {
+		list, err := db.GetListByID(listID, 0)
+		if err != nil || list.OwnerID != userID {
+			return sendError(c, 403, "error.forbidden")
+		}
+	} else {
+		// Verify user is member of the target group
+		if !db.IsGroupMember(groupID, userID) {
+			return sendError(c, 403, "error.forbidden")
+		}
+	}
+
+	if err := db.TransferListToGroup(listID, groupID, userID); err != nil {
+		return sendError(c, 500, "error.update_failed")
+	}
+
+	BroadcastUpdate("list_updated", map[string]int64{"id": listID})
+
+	if c.Get("HX-Request") == "true" {
+		c.Set("HX-Redirect", "/lists/"+c.Params("id"))
+		return c.SendStatus(200)
+	}
+	return c.Redirect("/lists/" + c.Params("id"))
 }
 
 // ToggleShowCompleted toggles the show_completed setting for a list
@@ -315,10 +383,10 @@ func ToggleShowCompleted(c *fiber.Ctx) error {
 }
 
 // sectionRenderMap builds the template data map for rendering a single section partial
-func sectionRenderMap(section *db.Section) fiber.Map {
+func sectionRenderMap(section *db.Section, userID int64) fiber.Map {
 	return fiber.Map{
 		"Section":       section,
-		"Sections":      getSectionsForDropdown(),
+		"Sections":      getSectionsForDropdown(userID),
 		"ShowCompleted": db.GetShowCompletedForSection(section.ID),
 	}
 }

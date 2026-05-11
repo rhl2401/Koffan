@@ -9,12 +9,12 @@ import (
 
 // GetAllData returns all sections with items and stats for offline caching
 func GetAllData(c *fiber.Ctx) error {
-	sections, err := db.GetAllSections()
+	sections, err := db.GetAllSections(0)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch data"})
 	}
 
-	stats := db.GetStats()
+	stats := db.GetStats(0)
 
 	return c.JSON(fiber.Map{
 		"sections":  sections,

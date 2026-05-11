@@ -63,6 +63,42 @@ func Init() {
 
 func createTables() {
 	schema := `
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		provider TEXT NOT NULL,
+		provider_id TEXT NOT NULL,
+		email TEXT NOT NULL,
+		name TEXT NOT NULL,
+		avatar_url TEXT DEFAULT '',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+		UNIQUE(provider, provider_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS groups (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		created_by INTEGER NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS group_members (
+		group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+		user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		role TEXT NOT NULL DEFAULT 'member',
+		joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (group_id, user_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS group_invites (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+		invited_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		email TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(group_id, email)
+	);
+
 	CREATE TABLE IF NOT EXISTS sections (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
@@ -101,6 +137,8 @@ func createTables() {
 	CREATE INDEX IF NOT EXISTS idx_items_section ON items(section_id, sort_order);
 	CREATE INDEX IF NOT EXISTS idx_sections_order ON sections(sort_order);
 	CREATE INDEX IF NOT EXISTS idx_item_history_name ON item_history(name COLLATE NOCASE);
+	CREATE INDEX IF NOT EXISTS idx_group_members_user ON group_members(user_id);
+	CREATE INDEX IF NOT EXISTS idx_group_invites_email ON group_invites(email);
 	`
 
 	_, err := DB.Exec(schema)
@@ -177,6 +215,15 @@ func runMigrations() {
 
 	// Migration: Add show_completed to lists
 	migrateListShowCompleted()
+
+	// Migration: Add user_id to sessions
+	migrateSessionsUserID()
+
+	// Migration: Add owner_id and group_id to lists
+	migrateListsOwnership()
+
+	// Migration: Move existing unowned lists to a "Shared" group
+	migrateExistingListsToSharedGroup()
 }
 
 func migrateToMultipleLists() {
@@ -374,6 +421,77 @@ func migrateListShowCompleted() {
 	}
 
 	log.Println("Migration completed: List show_completed added")
+}
+
+func migrateSessionsUserID() {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('sessions') WHERE name='user_id'").Scan(&count)
+	if err != nil || count > 0 {
+		return
+	}
+	log.Println("Running migration: Adding user_id to sessions...")
+	_, err = DB.Exec("ALTER TABLE sessions ADD COLUMN user_id INTEGER DEFAULT 0")
+	if err != nil {
+		log.Println("Migration failed - adding user_id to sessions:", err)
+	} else {
+		log.Println("Migration completed: sessions.user_id added")
+	}
+}
+
+func migrateListsOwnership() {
+	var ownerCount, groupCount int
+	DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('lists') WHERE name='owner_id'").Scan(&ownerCount)
+	DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('lists') WHERE name='group_id'").Scan(&groupCount)
+	if ownerCount > 0 && groupCount > 0 {
+		return
+	}
+	log.Println("Running migration: Adding ownership columns to lists...")
+	if ownerCount == 0 {
+		if _, err := DB.Exec("ALTER TABLE lists ADD COLUMN owner_id INTEGER DEFAULT 0"); err != nil {
+			log.Println("Migration failed - adding owner_id to lists:", err)
+			return
+		}
+	}
+	if groupCount == 0 {
+		if _, err := DB.Exec("ALTER TABLE lists ADD COLUMN group_id INTEGER DEFAULT 0"); err != nil {
+			log.Println("Migration failed - adding group_id to lists:", err)
+			return
+		}
+	}
+	log.Println("Migration completed: lists ownership columns added")
+}
+
+func migrateExistingListsToSharedGroup() {
+	// Check if there are any lists with no owner_id set (pre-multiuser data)
+	var unownedCount int
+	err := DB.QueryRow("SELECT COUNT(*) FROM lists WHERE owner_id IS NULL OR owner_id = 0").Scan(&unownedCount)
+	if err != nil || unownedCount == 0 {
+		return
+	}
+
+	log.Printf("Running migration: Moving %d legacy lists to 'Shared' group...", unownedCount)
+
+	// Find or create the Shared group (created_by = 0 = system)
+	var sharedGroupID int64
+	err = DB.QueryRow("SELECT id FROM groups WHERE name = 'Shared' AND created_by = 0").Scan(&sharedGroupID)
+	if err != nil {
+		// Create it
+		result, execErr := DB.Exec("INSERT INTO groups (name, created_by) VALUES ('Shared', 0)")
+		if execErr != nil {
+			log.Println("Migration failed - creating Shared group:", execErr)
+			return
+		}
+		sharedGroupID, _ = result.LastInsertId()
+		log.Printf("Migration: Created 'Shared' group with id=%d", sharedGroupID)
+	}
+
+	// Move all unowned lists into the Shared group
+	_, err = DB.Exec("UPDATE lists SET group_id = ? WHERE owner_id IS NULL OR owner_id = 0", sharedGroupID)
+	if err != nil {
+		log.Println("Migration failed - moving lists to Shared group:", err)
+		return
+	}
+	log.Println("Migration completed: Legacy lists moved to 'Shared' group")
 }
 
 func Close() {

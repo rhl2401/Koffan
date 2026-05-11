@@ -78,7 +78,7 @@ func CreateSection(c *fiber.Ctx) error {
 	}
 
 	// Check if list exists
-	_, err := db.GetListByID(req.ListID)
+	_, err := db.GetListByID(req.ListID, 0)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{

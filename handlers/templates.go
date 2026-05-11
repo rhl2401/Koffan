@@ -196,7 +196,7 @@ func ApplyTemplate(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_id")
 	}
 
-	activeList, err := db.GetActiveList()
+	activeList, err := db.GetActiveList(GetCurrentUserID(c))
 	if err != nil {
 		return sendError(c, 500, "error.no_active_list")
 	}
@@ -226,7 +226,7 @@ func CreateTemplateFromList(c *fiber.Ctx) error {
 
 	description := c.FormValue("description")
 
-	activeList, err := db.GetActiveList()
+	activeList, err := db.GetActiveList(GetCurrentUserID(c))
 	if err != nil {
 		return sendError(c, 500, "error.no_active_list")
 	}

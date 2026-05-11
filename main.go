@@ -17,6 +17,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/methodoverride"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/gofiber/websocket/v2"
@@ -124,6 +125,7 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 	app.Use(recover.New())
+	app.Use(methodoverride.New())
 	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
 
 	// Static files
@@ -163,6 +165,10 @@ func main() {
 	app.Get("/login", handlers.LoginPage)
 	app.Post("/login", handlers.LoginRateLimitMiddleware, handlers.Login)
 	app.Post("/logout", handlers.Logout)
+
+	// OAuth routes (before auth middleware)
+	app.Get("/auth/:provider", handlers.OAuthBegin)
+	app.Get("/auth/:provider/callback", handlers.OAuthCallback)
 
 	// i18n API (before auth middleware - needed for login page)
 	app.Get("/locales", handlers.GetLocales)
@@ -264,6 +270,23 @@ func main() {
 	app.Get("/export/preview", handlers.GetExportPreview)
 	app.Post("/import", handlers.ImportData)
 	app.Post("/import/preview", handlers.PreviewImport)
+
+	// Groups management
+	app.Get("/groups", handlers.GetGroupsPage)
+	app.Post("/groups", handlers.CreateGroup)
+	app.Get("/groups/:id", handlers.GetGroupDetail)
+	app.Post("/groups/:id", handlers.UpdateGroup)
+	app.Delete("/groups/:id", handlers.DeleteGroup)
+	app.Post("/groups/:id/invite", handlers.InviteMember)
+	app.Delete("/groups/:id/members/:userID", handlers.RemoveMember)
+	app.Post("/groups/:id/leave", handlers.LeaveGroup)
+
+	// Group invite actions
+	app.Post("/invites/:id/accept", handlers.AcceptInvite)
+	app.Post("/invites/:id/decline", handlers.DeclineInvite)
+
+	// List transfer
+	app.Post("/lists/:id/transfer", handlers.TransferListToGroup)
 
 	// Database management
 	app.Get("/api/database/csrf-token", handlers.GenerateCSRFToken)

@@ -15,7 +15,7 @@ const (
 
 // GetLists returns all lists
 func GetLists(c *fiber.Ctx) error {
-	lists, err := db.GetAllLists()
+	lists, err := db.GetAllLists(0)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "db_error",
@@ -35,7 +35,7 @@ func GetList(c *fiber.Ctx) error {
 		})
 	}
 
-	list, err := db.GetListByID(int64(id))
+	list, err := db.GetListByID(int64(id), 0)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -106,7 +106,7 @@ func CreateList(c *fiber.Ctx) error {
 	}
 
 	icon := NormalizeIcon(req.Icon)
-	list, err := db.CreateList(req.Name, icon)
+	list, err := db.CreateList(req.Name, icon, 0)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "create_failed",
@@ -137,7 +137,7 @@ func UpdateList(c *fiber.Ctx) error {
 	}
 
 	// Get existing list to check if it exists and for default values
-	existing, err := db.GetListByID(int64(id))
+	existing, err := db.GetListByID(int64(id), 0)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -225,7 +225,7 @@ func DeleteList(c *fiber.Ctx) error {
 	}
 
 	// Check if list exists
-	_, err = db.GetListByID(int64(id))
+	_, err = db.GetListByID(int64(id), 0)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -261,7 +261,7 @@ func GetListSections(c *fiber.Ctx) error {
 	}
 
 	// Check if list exists
-	_, err = db.GetListByID(int64(id))
+	_, err = db.GetListByID(int64(id), 0)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -297,7 +297,7 @@ func MoveListUp(c *fiber.Ctx) error {
 	}
 
 	// Check if list exists
-	_, err = db.GetListByID(int64(id))
+	_, err = db.GetListByID(int64(id), 0)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -320,7 +320,7 @@ func MoveListUp(c *fiber.Ctx) error {
 
 	handlers.BroadcastUpdate("lists_reordered", nil)
 
-	list, _ := db.GetListByID(int64(id))
+	list, _ := db.GetListByID(int64(id), 0)
 	return c.JSON(list)
 }
 
@@ -335,7 +335,7 @@ func MoveListDown(c *fiber.Ctx) error {
 	}
 
 	// Check if list exists
-	_, err = db.GetListByID(int64(id))
+	_, err = db.GetListByID(int64(id), 0)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -358,6 +358,6 @@ func MoveListDown(c *fiber.Ctx) error {
 
 	handlers.BroadcastUpdate("lists_reordered", nil)
 
-	list, _ := db.GetListByID(int64(id))
+	list, _ := db.GetListByID(int64(id), 0)
 	return c.JSON(list)
 }

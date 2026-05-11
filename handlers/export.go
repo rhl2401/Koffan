@@ -77,7 +77,7 @@ func ExportAllData(c *fiber.Ctx) error {
 	includeTemplates := c.Query("include_templates", "true") == "true"
 	includeHistory := c.Query("include_history", "true") == "true"
 
-	lists, err := db.GetAllLists()
+	lists, err := db.GetAllLists(GetCurrentUserID(c))
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch lists"})
 	}
@@ -98,7 +98,7 @@ func ExportSingleList(c *fiber.Ctx) error {
 
 	format := c.Query("format", "json")
 
-	list, err := db.GetListByID(id)
+	list, err := db.GetListByID(id, GetCurrentUserID(c))
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "List not found"})
 	}
@@ -395,7 +395,7 @@ func sanitizeFilename(name string) string {
 
 // GetExportPreview returns a preview of what will be exported (for UI)
 func GetExportPreview(c *fiber.Ctx) error {
-	lists, err := db.GetAllLists()
+	lists, err := db.GetAllLists(GetCurrentUserID(c))
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch lists"})
 	}

@@ -25,23 +25,25 @@ func GetSectionHTML(c *fiber.Ctx) error {
 		return sendError(c, 404, "error.section_not_found")
 	}
 
-	return c.Render("partials/section", sectionRenderMap(section), "")
+	return c.Render("partials/section", sectionRenderMap(section, GetCurrentUserID(c)), "")
 }
 
 // GetSections returns all sections with items (for full page render)
 func GetSections(c *fiber.Ctx) error {
-	sections, err := db.GetAllSections()
+	userID := GetCurrentUserID(c)
+	user, _ := GetCurrentUser(c)
+
+	sections, err := db.GetAllSections(userID)
 	if err != nil {
 		return sendError(c, 500, "error.fetch_failed")
 	}
 
-	stats := db.GetStats()
-
-	// Get lists for dropdown
-	lists, _ := db.GetAllLists()
-	activeList, _ := db.GetActiveList()
+	stats := db.GetStats(userID)
+	lists, _ := db.GetAllLists(userID)
+	activeList, _ := db.GetActiveList(userID)
 
 	return c.Render("list", fiber.Map{
+		"CurrentUser":  user,
 		"Sections":     sections,
 		"Stats":        stats,
 		"Lists":        lists,
@@ -54,6 +56,7 @@ func GetSections(c *fiber.Ctx) error {
 
 // CreateSection creates a new section
 func CreateSection(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
 	name := c.FormValue("name")
 	if name == "" {
 		return sendError(c, 400, "error.name_required")
@@ -65,7 +68,15 @@ func CreateSection(c *fiber.Ctx) error {
 		return sendError(c, 400, "common.reserved_name")
 	}
 
-	section, err := db.CreateSection(name)
+	// If a specific list_id is provided, verify access
+	if listIDStr := c.FormValue("list_id"); listIDStr != "" {
+		listID, err := strconv.ParseInt(listIDStr, 10, 64)
+		if err == nil && !db.UserCanAccessList(userID, listID) {
+			return sendError(c, 403, "error.forbidden")
+		}
+	}
+
+	section, err := db.CreateSection(name, userID)
 	if err != nil {
 		return sendError(c, 500, "error.create_failed")
 	}
@@ -74,14 +85,18 @@ func CreateSection(c *fiber.Ctx) error {
 	BroadcastUpdate("section_created", section)
 
 	// Return the new section partial for HTMX
-	return c.Render("partials/section", sectionRenderMap(section), "")
+	return c.Render("partials/section", sectionRenderMap(section, GetCurrentUserID(c)), "")
 }
 
 // UpdateSection updates a section's name
 func UpdateSection(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return sendError(c, 400, "error.invalid_id")
+	}
+	if !db.UserCanAccessSection(userID, id) {
+		return sendError(c, 403, "error.forbidden")
 	}
 
 	name := c.FormValue("name")
@@ -109,14 +124,18 @@ func UpdateSection(c *fiber.Ctx) error {
 	}
 
 	// Return updated section partial for main list
-	return c.Render("partials/section", sectionRenderMap(section), "")
+	return c.Render("partials/section", sectionRenderMap(section, GetCurrentUserID(c)), "")
 }
 
 // DeleteSection deletes a section and all its items
 func DeleteSection(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return sendError(c, 400, "error.invalid_id")
+	}
+	if !db.UserCanAccessSection(userID, id) {
+		return sendError(c, 403, "error.forbidden")
 	}
 
 	err = db.DeleteSection(id)
@@ -191,12 +210,12 @@ func UpdateSectionSortMode(c *fiber.Ctx) error {
 
 	BroadcastUpdate("section_sort_changed", map[string]interface{}{"section_id": id, "sort_mode": sortMode})
 
-	return c.Render("partials/section", sectionRenderMap(section), "")
+	return c.Render("partials/section", sectionRenderMap(section, GetCurrentUserID(c)), "")
 }
 
 // Helper to get sections for dropdown
-func getSectionsForDropdown() []db.Section {
-	sections, _ := db.GetAllSections()
+func getSectionsForDropdown(userID int64) []db.Section {
+	sections, _ := db.GetAllSections(userID)
 	return sections
 }
 
@@ -248,14 +267,18 @@ func splitAndTrimCSV(s string) []string {
 
 // getSectionsForList returns sections for a specific list (by list_id query param) or falls back to the active list.
 func getSectionsForList(c *fiber.Ctx) ([]db.Section, error) {
+	userID := GetCurrentUserID(c)
 	if listIDStr := c.Query("list_id"); listIDStr != "" {
 		listID, err := strconv.ParseInt(listIDStr, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %s", ErrInvalidListID, listIDStr)
 		}
+		if !db.UserCanAccessList(userID, listID) {
+			return nil, fmt.Errorf("forbidden")
+		}
 		return db.GetSectionsByList(listID)
 	}
-	return db.GetAllSections()
+	return db.GetAllSections(userID)
 }
 
 // Helper to return sections for modal

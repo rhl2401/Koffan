@@ -128,7 +128,7 @@ func previewJSONImport(c *fiber.Ctx, data []byte) error {
 	}
 
 	// Get existing lists for conflict detection
-	existingLists, _ := db.GetAllLists()
+	existingLists, _ := db.GetAllLists(GetCurrentUserID(c))
 	existingNames := make(map[string]bool)
 	for _, list := range existingLists {
 		existingNames[strings.ToLower(list.Name)] = true
@@ -244,7 +244,7 @@ func previewCSVImport(c *fiber.Ctx, data []byte, delimiter string) error {
 	}
 
 	// Get existing lists for conflict detection
-	existingLists, _ := db.GetAllLists()
+	existingLists, _ := db.GetAllLists(GetCurrentUserID(c))
 	existingNames := make(map[string]bool)
 	for _, list := range existingLists {
 		existingNames[strings.ToLower(list.Name)] = true
@@ -399,7 +399,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 	defer tx.Rollback()
 
 	// Get existing lists for conflict detection
-	existingLists, _ := db.GetAllLists()
+	existingLists, _ := db.GetAllLists(GetCurrentUserID(c))
 	existingNames := make(map[string]int64)
 	for _, list := range existingLists {
 		existingNames[strings.ToLower(list.Name)] = list.ID
@@ -444,7 +444,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 		}
 
 		// Create list with is_active flag preserved
-		list, err := db.CreateListTx(tx, exportList.Name, exportList.Icon)
+		list, err := db.CreateListTx(tx, exportList.Name, exportList.Icon, GetCurrentUserID(c))
 		if err != nil {
 			continue
 		}
@@ -577,7 +577,7 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 	defer tx.Rollback()
 
 	// Get existing lists for conflict detection
-	existingLists, _ := db.GetAllLists()
+	existingLists, _ := db.GetAllLists(GetCurrentUserID(c))
 	existingNames := make(map[string]int64)
 	for _, list := range existingLists {
 		existingNames[strings.ToLower(list.Name)] = list.ID
@@ -717,7 +717,7 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 				}
 			}
 
-			newList, err := db.CreateListTx(tx, listName, listIcon)
+			newList, err := db.CreateListTx(tx, listName, listIcon, GetCurrentUserID(c))
 			if err != nil {
 				continue
 			}

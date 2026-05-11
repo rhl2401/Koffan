@@ -136,7 +136,7 @@ docker-compose up -d
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `APP_ENV` | `development` | Set to `production` for secure cookies |
-| `APP_PASSWORD` | `shopping123` | Login password |
+| `APP_PASSWORD` | `shopping123` | Login password (always available as fallback) |
 | `DISABLE_AUTH` | `false` | Set to `true` to disable authentication (for reverse proxy setups) |
 | `PORT` | `8080` (Docker) / `3000` (local) | Server port |
 | `DB_PATH` | `./shopping.db` | Database file path |
@@ -145,6 +145,52 @@ docker-compose up -d
 | `LOGIN_WINDOW_MINUTES` | `15` | Time window for counting attempts |
 | `LOGIN_LOCKOUT_MINUTES` | `30` | Lockout duration after exceeding limit |
 | `API_TOKEN` | *(disabled)* | Enable REST API with this token ([docs](https://github.com/PanSalut/Koffan/wiki/REST-API)) |
+| `GOOGLE_CLIENT_ID` | *(disabled)* | Google OAuth client ID — enables "Continue with Google" button |
+| `GOOGLE_CLIENT_SECRET` | — | Google OAuth client secret |
+| `MICROSOFT_CLIENT_ID` | *(disabled)* | Microsoft / Entra OAuth client ID — enables "Continue with Microsoft" button |
+| `MICROSOFT_CLIENT_SECRET` | — | Microsoft OAuth client secret |
+| `MICROSOFT_TENANT` | `common` | Azure AD tenant (`common` allows any Microsoft account) |
+| `POCKETID_URL` | *(disabled)* | Base URL of your PocketID instance — enables "Continue with PocketID" button |
+| `POCKETID_CLIENT_ID` | — | PocketID OAuth client ID |
+| `POCKETID_CLIENT_SECRET` | — | PocketID OAuth client secret |
+
+## OAuth Setup
+
+OAuth providers are optional. The password login is always available as a fallback. A provider button appears on the login page only when its `CLIENT_ID` variable is set.
+
+### Google
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials**.
+2. Create an **OAuth 2.0 Client ID** (type: *Web application*).
+3. Add your app's URL to **Authorized redirect URIs**: `https://your-domain/auth/google/callback`
+4. Set the environment variables:
+   ```
+   GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   ```
+
+### Microsoft / Entra
+
+1. Go to [Azure Portal](https://portal.azure.com/) → **Microsoft Entra ID** → **App registrations** → **New registration**.
+2. Under **Redirect URIs**, add: `https://your-domain/auth/microsoft/callback`
+3. Create a **Client secret** under **Certificates & secrets**.
+4. Set the environment variables:
+   ```
+   MICROSOFT_CLIENT_ID=your-application-client-id
+   MICROSOFT_CLIENT_SECRET=your-client-secret
+   MICROSOFT_TENANT=common   # or your specific tenant ID to restrict to one org
+   ```
+
+### PocketID
+
+1. In your PocketID admin panel, create a new **OIDC Client**.
+2. Set the redirect URI to: `https://your-domain/auth/pocketid/callback`
+3. Set the environment variables:
+   ```
+   POCKETID_URL=https://id.your-domain.com
+   POCKETID_CLIENT_ID=your-client-id
+   POCKETID_CLIENT_SECRET=your-client-secret
+   ```
 
 ## Deploy to Your Server
 

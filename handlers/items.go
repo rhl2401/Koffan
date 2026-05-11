@@ -32,9 +32,13 @@ func retryOnBusy[T any](maxRetries int, operation func() (T, error)) (T, error) 
 
 // CreateItem creates a new item in a section
 func CreateItem(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
 	sectionID, err := strconv.ParseInt(c.FormValue("section_id"), 10, 64)
 	if err != nil {
 		return sendError(c, 400, "error.invalid_section_id")
+	}
+	if !db.UserCanAccessSection(userID, sectionID) {
+		return sendError(c, 403, "error.forbidden")
 	}
 
 	name := c.FormValue("name")
@@ -79,7 +83,7 @@ func CreateItem(c *fiber.Ctx) error {
 			c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 			return c.Render("partials/item", fiber.Map{
 				"Item":     item,
-				"Sections": getSectionsForDropdown(),
+				"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 			}, "")
 		}
 		// Item already active - signal to client
@@ -105,14 +109,14 @@ func CreateItem(c *fiber.Ctx) error {
 	if c.FormValue("quick_add") == "true" {
 		return c.Render("partials/item", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 		}, "")
 	}
 
 	// Regular form also returns per-item partial (client handles DOM insertion)
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 	}, "")
 }
 
@@ -157,12 +161,12 @@ func UpdateItem(c *fiber.Ctx) error {
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 		}, "")
 	}
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 	}, "")
 }
 
@@ -190,7 +194,8 @@ func DeleteItem(c *fiber.Ctx) error {
 
 // DeleteCompletedItems deletes all completed items
 func DeleteCompletedItems(c *fiber.Ctx) error {
-	count, err := db.DeleteCompletedItems()
+	userID := GetCurrentUserID(c)
+	count, err := db.DeleteCompletedItems(userID)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
 	}
@@ -221,12 +226,12 @@ func ToggleItem(c *fiber.Ctx) error {
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 		}, "")
 	}
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 	}, "")
 }
 
@@ -249,12 +254,12 @@ func ToggleUncertain(c *fiber.Ctx) error {
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 		}, "")
 	}
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 	}, "")
 }
 
@@ -291,12 +296,12 @@ func AdjustItemQuantity(c *fiber.Ctx) error {
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 		}, "")
 	}
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 	}, "")
 }
 
@@ -355,7 +360,7 @@ func MoveItemToSection(c *fiber.Ctx) error {
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 	}, "")
 }
 
@@ -428,15 +433,19 @@ func GetItemHTML(c *fiber.Ctx) error {
 
 	return c.Render(tmpl, fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": getSectionsForDropdown(GetCurrentUserID(c)),
 	}, "")
 }
 
 // CheckAllItems marks all active items in a section as completed
 func CheckAllItems(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return sendError(c, 400, "error.invalid_section_id")
+	}
+	if !db.UserCanAccessSection(userID, id) {
+		return sendError(c, 403, "error.forbidden")
 	}
 
 	count, err := db.CheckAllItems(id)
@@ -451,9 +460,13 @@ func CheckAllItems(c *fiber.Ctx) error {
 
 // UncheckAllItems marks all completed items in a section as active
 func UncheckAllItems(c *fiber.Ctx) error {
+	userID := GetCurrentUserID(c)
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return sendError(c, 400, "error.invalid_section_id")
+	}
+	if !db.UserCanAccessSection(userID, id) {
+		return sendError(c, 403, "error.forbidden")
 	}
 
 	count, err := db.UncheckAllItems(id)
@@ -468,7 +481,7 @@ func UncheckAllItems(c *fiber.Ctx) error {
 
 // GetStats returns current stats as JSON (for Alpine.js updates)
 func GetStats(c *fiber.Ctx) error {
-	stats := db.GetStats()
+	stats := db.GetStats(GetCurrentUserID(c))
 	return c.JSON(stats)
 }
 

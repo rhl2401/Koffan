@@ -1,0 +1,123 @@
+{{define "groups"}}
+<div x-data="{ showCreate: false, newName: '' }" class="min-h-screen bg-stone-50 dark:bg-stone-900">
+    <!-- Header -->
+    <header class="sticky top-0 z-30 bg-stone-50 dark:bg-stone-900 pt-3">
+        <div class="container mx-auto max-w-4xl px-4">
+            <div class="flex items-center gap-3 h-14 mb-4">
+                <a href="/" class="p-2 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 rounded-lg transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </a>
+                <h1 class="text-lg font-semibold text-stone-800 dark:text-stone-100 flex-1">Groups</h1>
+                <button
+                    @click="showCreate = true; $nextTick(() => $refs.nameInput?.focus())"
+                    class="flex items-center gap-2 bg-pink-400 hover:bg-pink-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    New Group
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 max-w-4xl pb-24">
+
+        {{if .Groups}}
+        <div class="space-y-3">
+            {{range .Groups}}
+            <a href="/groups/{{.ID}}"
+               class="flex items-center gap-4 bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 p-4 hover:border-pink-200 dark:hover:border-pink-700 hover:shadow-md transition-all group">
+                <!-- Icon -->
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
+                    <svg class="w-5 h-5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <p class="font-medium text-stone-800 dark:text-stone-100 truncate">{{.Name}}</p>
+                    <p class="text-sm text-stone-400 dark:text-stone-500 capitalize">{{.Role}}</p>
+                </div>
+                <!-- Arrow -->
+                <svg class="w-5 h-5 text-stone-300 dark:text-stone-600 group-hover:text-pink-400 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+            {{end}}
+        </div>
+        {{else}}
+        <div class="text-center py-20">
+            <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">
+                <svg class="w-8 h-8 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <p class="text-stone-600 dark:text-stone-400 font-medium">No groups yet</p>
+            <p class="text-sm text-stone-400 dark:text-stone-500 mt-1">Create a group to share lists with others</p>
+            <button
+                @click="showCreate = true; $nextTick(() => $refs.nameInput?.focus())"
+                class="mt-4 inline-flex items-center gap-2 bg-pink-400 hover:bg-pink-500 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Create your first group
+            </button>
+        </div>
+        {{end}}
+
+    </div>
+
+    <!-- Create Group Modal -->
+    <div
+        x-show="showCreate"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+    >
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showCreate = false"></div>
+        <div
+            class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-sm p-6"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
+            x-transition:enter-end="translate-y-0 md:scale-100 opacity-100"
+        >
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100">New Group</h3>
+                <button @click="showCreate = false" class="p-1 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 rounded-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form action="/groups" method="POST">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-1">Group name</label>
+                    <input
+                        x-ref="nameInput"
+                        type="text"
+                        name="name"
+                        required
+                        maxlength="100"
+                        placeholder="e.g. Family, Roommates..."
+                        class="w-full border border-stone-200 dark:border-stone-600 dark:bg-stone-700 rounded-lg px-4 py-2.5 text-sm text-stone-700 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                    >
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button type="button" @click="showCreate = false"
+                        class="px-4 py-2 text-sm text-stone-600 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="bg-pink-400 hover:bg-pink-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{{end}}
