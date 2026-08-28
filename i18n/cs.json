@@ -80,6 +80,8 @@
     "theme_light": "Světlý",
     "theme_dark": "Tmavý",
     "theme_system": "Podle systému",
+    "compact_mode": "Kompaktní režim",
+    "compact_mode_desc": "Menší rozestupy, poznámky se zobrazují na stejném řádku jako název",
     "language": "Jazyk",
     "coming_soon": "Již brzy...",
     "sponsor": "Chceš podpořit aplikaci? Přidej do košíku!",

@@ -80,6 +80,8 @@
     "theme_light": "Light",
     "theme_dark": "Dark",
     "theme_system": "System",
+    "compact_mode": "Compact mode",
+    "compact_mode_desc": "Tighter spacing, with notes shown on the same line as the name",
     "language": "Language",
     "coming_soon": "Coming soon...",
     "sponsor": "Want to support the app? Add to cart!",

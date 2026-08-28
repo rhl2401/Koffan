@@ -80,6 +80,8 @@
 		"theme_light": "Šviesus",
 		"theme_dark": "Tamsus",
 		"theme_system": "Sistema",
+		"compact_mode": "Kompaktiškas režimas",
+		"compact_mode_desc": "Mažesni tarpai, pastabos rodomos toje pačioje eilutėje kaip pavadinimas",
 		"language": "Kalba",
 		"coming_soon": "Netrukus...",
 		"sponsor": "Norite paremti programėlę? Įdėkite į krepšelį!",

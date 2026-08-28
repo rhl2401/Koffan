@@ -80,6 +80,8 @@
     "theme_light": "浅色",
     "theme_dark": "深色",
     "theme_system": "跟随系统",
+    "compact_mode": "紧凑模式",
+    "compact_mode_desc": "间距更小,备注与名称显示在同一行",
     "language": "语言",
     "coming_soon": "即将推出...",
     "sponsor": "支持此应用？加入购物车！",

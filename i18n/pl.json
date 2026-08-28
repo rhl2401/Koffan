@@ -80,6 +80,8 @@
     "theme_light": "Jasny",
     "theme_dark": "Ciemny",
     "theme_system": "System",
+    "compact_mode": "Tryb kompaktowy",
+    "compact_mode_desc": "Mniejsze odstępy, notatki są wyświetlane w tym samym wierszu co nazwa",
     "language": "Język",
     "coming_soon": "Wkrótce...",
     "sponsor": "Chcesz wesprzeć rozwój aplikacji? Dorzuć do koszyka!",

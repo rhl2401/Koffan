@@ -80,6 +80,8 @@
     "theme_light": "Claro",
     "theme_dark": "Oscuro",
     "theme_system": "Sistema",
+    "compact_mode": "Modo compacto",
+    "compact_mode_desc": "Espaciado más reducido, las notas aparecen en la misma línea que el nombre",
     "language": "Idioma",
     "coming_soon": "Próximamente...",
     "sponsor": "¿Quieres apoyar la app? ¡Añade al carrito!",

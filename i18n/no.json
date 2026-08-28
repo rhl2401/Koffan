@@ -80,6 +80,8 @@
     "theme_light": "Lys",
     "theme_dark": "Mørk",
     "theme_system": "System",
+    "compact_mode": "Kompakt modus",
+    "compact_mode_desc": "Mindre avstand, notater vises på samme linje som navnet",
     "language": "Språk",
     "coming_soon": "Kommer snart...",
     "sponsor": "Vil du støtte appen? Legg i handlekurven!",

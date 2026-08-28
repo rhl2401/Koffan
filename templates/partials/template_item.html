@@ -1,7 +1,7 @@
 {{define "partials/template_item"}}
 <div
     id="template-{{.Template.ID}}"
-    class="bg-white rounded-xl border border-stone-200 p-4"
+    class="card-row bg-white rounded-xl border border-stone-200 p-4"
     x-data="{ expanded: false, editing: false, editName: '{{.Template.Name}}', editDesc: '{{.Template.Description}}' }"
 >
     <!-- Header -->
@@ -19,12 +19,12 @@
         <!-- Template info -->
         <div class="flex-1 min-w-0">
             <!-- View mode -->
-            <div x-show="!editing">
+            <div x-show="!editing" class="flex items-center flex-wrap gap-x-2 gap-y-0.5">
                 <p class="font-medium text-stone-800 truncate">{{.Template.Name}}</p>
                 {{if .Template.Description}}
-                <p class="text-xs text-stone-400 truncate">{{.Template.Description}}</p>
+                <p class="subtext text-xs text-stone-400 truncate">{{.Template.Description}}</p>
                 {{else}}
-                <p class="text-xs text-stone-400">{{len .Template.Items}} <span x-text="t('templates.items')">produktów</span></p>
+                <p class="subtext text-xs text-stone-400">{{len .Template.Items}} <span x-text="t('templates.items')">produktów</span></p>
                 {{end}}
             </div>
 

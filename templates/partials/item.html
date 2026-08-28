@@ -31,7 +31,7 @@
         class="flex-1 min-w-0 cursor-pointer ml-2"
         @click="$data.toggleItem({{.Item.ID}}, {{.Item.SectionID}})"
     >
-        <div class="flex items-center gap-2">
+        <div class="flex items-center flex-wrap gap-x-2 gap-y-0.5">
             {{if .Item.Uncertain}}
             <span class="text-amber-500 dark:text-amber-400 text-xs">?</span>
             {{end}}
@@ -39,10 +39,10 @@
             {{if gt .Item.Quantity 0}}
             <span class="px-1.5 py-0.5 text-xs font-medium bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-full flex-shrink-0">{{.Item.Quantity}}x</span>
             {{end}}
+            {{if .Item.Description}}
+            <p class="subtext text-xs text-stone-400 dark:text-stone-500 truncate mt-0.5">{{.Item.Description}}</p>
+            {{end}}
         </div>
-        {{if .Item.Description}}
-        <p class="text-xs text-stone-400 dark:text-stone-500 truncate mt-0.5">{{.Item.Description}}</p>
-        {{end}}
     </div>
 
     <!-- Desktop Actions -->

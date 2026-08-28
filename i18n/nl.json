@@ -80,6 +80,8 @@
     "theme_light": "Licht",
     "theme_dark": "Donker",
     "theme_system": "Systeem",
+    "compact_mode": "Compacte modus",
+    "compact_mode_desc": "Minder ruimte, notities staan op dezelfde regel als de naam",
     "language": "Taal",
     "coming_soon": "Binnenkort beschikbaar...",
     "sponsor": "Wil je de app steunen? Voeg toe aan je winkelwagen!",

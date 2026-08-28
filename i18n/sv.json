@@ -80,6 +80,8 @@
     "theme_light": "Ljust",
     "theme_dark": "Mörkt",
     "theme_system": "System",
+    "compact_mode": "Kompakt läge",
+    "compact_mode_desc": "Mindre marginaler, anteckningar visas på samma rad som namnet",
     "language": "Språk",
     "coming_soon": "Kommer inom kort...",
     "sponsor": "Vill du stödja appen? Lägg till den i varukorgen!",
