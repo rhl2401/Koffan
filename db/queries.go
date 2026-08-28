@@ -317,7 +317,7 @@ func UpdateList(id int64, name, icon string) (*List, error) {
 			return nil, err
 		}
 	}
-	return GetListByID(id)
+	return GetListByID(id, 0)
 }
 
 // ToggleListShowCompleted toggles the show_completed flag on a list
@@ -326,7 +326,7 @@ func ToggleListShowCompleted(id int64) (*List, error) {
 	if err != nil {
 		return nil, err
 	}
-	return GetListByID(id)
+	return GetListByID(id, 0)
 }
 
 // SetListShowCompleted explicitly sets the show_completed flag on a list
@@ -335,7 +335,7 @@ func SetListShowCompleted(id int64, value bool) (*List, error) {
 	if err != nil {
 		return nil, err
 	}
-	return GetListByID(id)
+	return GetListByID(id, 0)
 }
 
 // GetShowCompletedForSection returns the show_completed setting for the list a section belongs to

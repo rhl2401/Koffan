@@ -411,7 +411,7 @@ func returnSectionItems(c *fiber.Ctx, sectionID int64) error {
 		return sendError(c, 500, "error.fetch_failed")
 	}
 
-	return c.Render("partials/section", sectionRenderMap(section), "")
+	return c.Render("partials/section", sectionRenderMap(section, GetCurrentUserID(c)), "")
 }
 
 // GetItemHTML returns a single item rendered as HTML partial

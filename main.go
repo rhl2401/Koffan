@@ -17,7 +17,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/methodoverride"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/gofiber/websocket/v2"
@@ -125,7 +124,14 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 	app.Use(recover.New())
-	app.Use(methodoverride.New())
+	app.Use(func(c *fiber.Ctx) error {
+		if c.Method() == fiber.MethodPost {
+			if method := c.FormValue("_method"); method != "" {
+				c.Method(method)
+			}
+		}
+		return c.Next()
+	})
 	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
 
 	// Static files
