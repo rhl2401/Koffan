@@ -14,10 +14,12 @@ type Provider interface {
 	// only for Apple).
 	UsesFormPost() bool
 	// AuthCodeURL builds the URL to redirect the browser to in order to
-	// start the flow.
-	AuthCodeURL(redirectURI, state, nonce string) string
+	// start the flow. verifier is the PKCE code verifier for this flow;
+	// providers that don't use PKCE (Facebook) ignore it.
+	AuthCodeURL(redirectURI, state, nonce, verifier string) string
 	// Exchange trades an authorization code for a verified Identity. For
 	// OIDC-shaped providers this also verifies the id_token's nonce claim
-	// against nonce; providers without an id_token (Facebook) ignore it.
-	Exchange(ctx context.Context, code, nonce, redirectURI string) (*Identity, error)
+	// against nonce and sends verifier as the PKCE code_verifier; providers
+	// without an id_token or PKCE support (Facebook) ignore both.
+	Exchange(ctx context.Context, code, nonce, verifier, redirectURI string) (*Identity, error)
 }

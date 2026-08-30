@@ -35,14 +35,17 @@ func (p *facebookProvider) Name() string        { return "facebook" }
 func (p *facebookProvider) DisplayName() string { return "Facebook" }
 func (p *facebookProvider) UsesFormPost() bool  { return false }
 
-func (p *facebookProvider) AuthCodeURL(redirectURI, state, _ string) string {
+// AuthCodeURL ignores verifier - Facebook's authorization-code flow here
+// doesn't use PKCE, unlike the shared OIDC providers.
+func (p *facebookProvider) AuthCodeURL(redirectURI, state, _, _ string) string {
 	return p.oauth2Cfg.AuthCodeURL(state, oauth2.SetAuthURLParam("redirect_uri", redirectURI))
 }
 
-// Exchange ignores nonce - Facebook issues no id_token, so there is
-// nothing to bind a nonce to; CSRF protection here rests entirely on the
-// state parameter checked by handlers.OAuthCallback before this is called.
-func (p *facebookProvider) Exchange(ctx context.Context, code, _ string, redirectURI string) (*Identity, error) {
+// Exchange ignores nonce and verifier - Facebook issues no id_token, so
+// there is nothing to bind a nonce to, and this flow doesn't use PKCE;
+// CSRF protection here rests entirely on the state parameter checked by
+// handlers.OAuthCallback before this is called.
+func (p *facebookProvider) Exchange(ctx context.Context, code, _, _, redirectURI string) (*Identity, error) {
 	token, err := p.oauth2Cfg.Exchange(ctx, code, oauth2.SetAuthURLParam("redirect_uri", redirectURI))
 	if err != nil {
 		return nil, fmt.Errorf("code exchange failed: %w", err)

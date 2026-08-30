@@ -54,10 +54,16 @@ func (p *oidcProvider) Name() string        { return p.name }
 func (p *oidcProvider) DisplayName() string { return p.displayName }
 func (p *oidcProvider) UsesFormPost() bool  { return p.formPost }
 
-func (p *oidcProvider) AuthCodeURL(redirectURI, state, nonce string) string {
+// AuthCodeURL always includes a PKCE code_challenge, even though every
+// provider here is a confidential client with a client_secret. This is
+// safe unconditionally: a provider that doesn't require or recognize PKCE
+// simply ignores the extra parameter and still completes the exchange via
+// client_secret as before (RFC 7636 is additive, not a breaking change).
+func (p *oidcProvider) AuthCodeURL(redirectURI, state, nonce, verifier string) string {
 	opts := []oauth2.AuthCodeOption{
 		oidc.Nonce(nonce),
 		oauth2.SetAuthURLParam("redirect_uri", redirectURI),
+		oauth2.S256ChallengeOption(verifier),
 	}
 	if p.formPost {
 		opts = append(opts, oauth2.SetAuthURLParam("response_mode", "form_post"))
@@ -65,8 +71,11 @@ func (p *oidcProvider) AuthCodeURL(redirectURI, state, nonce string) string {
 	return p.oauth2Cfg.AuthCodeURL(state, opts...)
 }
 
-func (p *oidcProvider) Exchange(ctx context.Context, code, nonce, redirectURI string) (*Identity, error) {
-	token, err := p.oauth2Cfg.Exchange(ctx, code, oauth2.SetAuthURLParam("redirect_uri", redirectURI))
+func (p *oidcProvider) Exchange(ctx context.Context, code, nonce, verifier, redirectURI string) (*Identity, error) {
+	token, err := p.oauth2Cfg.Exchange(ctx, code,
+		oauth2.SetAuthURLParam("redirect_uri", redirectURI),
+		oauth2.VerifierOption(verifier),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("code exchange failed: %w", err)
 	}

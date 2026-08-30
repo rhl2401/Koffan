@@ -45,7 +45,7 @@ func OAuthStart(c *fiber.Ctx) error {
 	})
 
 	redirectURI := oauth.RedirectURIFor(c, providerName)
-	return c.Redirect(provider.AuthCodeURL(redirectURI, flow.State, flow.Nonce))
+	return c.Redirect(provider.AuthCodeURL(redirectURI, flow.State, flow.Nonce, flow.Verifier))
 }
 
 // OAuthCallback completes an OAuth/OIDC login attempt. It's registered
@@ -90,7 +90,7 @@ func OAuthCallback(c *fiber.Ctx) error {
 	}
 
 	redirectURI := oauth.RedirectURIFor(c, providerName)
-	identity, err := provider.Exchange(c.Context(), code, flow.Nonce, redirectURI)
+	identity, err := provider.Exchange(c.Context(), code, flow.Nonce, flow.Verifier, redirectURI)
 	if err != nil {
 		log.Printf("[OAUTH] exchange failed for %s: %v", providerName, err)
 		return c.Redirect("/login?error=oauth_failed")
