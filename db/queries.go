@@ -38,6 +38,29 @@ type Item struct {
 type Session struct {
 	ID        string
 	ExpiresAt int64
+	UserID    sql.NullInt64
+}
+
+// User represents an account, created either via OAuth login or left
+// implicit for password-based sessions (which carry no user row at all).
+type User struct {
+	ID        int64
+	Email     string
+	Name      string
+	Picture   string
+	CreatedAt int64
+	UpdatedAt int64
+}
+
+// OAuthIdentity links a (provider, subject) pair from an OAuth/OIDC
+// provider to a local User.
+type OAuthIdentity struct {
+	ID        int64
+	UserID    int64
+	Provider  string
+	Subject   string
+	Email     string
+	CreatedAt int64
 }
 
 // List represents a shopping list
@@ -1102,9 +1125,15 @@ func CreateSession(id string, expiresAt int64) error {
 	return err
 }
 
+// CreateSessionForUser creates a session tied to an OAuth-authenticated user.
+func CreateSessionForUser(id string, expiresAt int64, userID int64) error {
+	_, err := DB.Exec(`INSERT INTO sessions (id, expires_at, user_id) VALUES (?, ?, ?)`, id, expiresAt, userID)
+	return err
+}
+
 func GetSession(id string) (*Session, error) {
 	var s Session
-	err := DB.QueryRow(`SELECT id, expires_at FROM sessions WHERE id = ?`, id).Scan(&s.ID, &s.ExpiresAt)
+	err := DB.QueryRow(`SELECT id, expires_at, user_id FROM sessions WHERE id = ?`, id).Scan(&s.ID, &s.ExpiresAt, &s.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -1119,6 +1148,88 @@ func DeleteSession(id string) error {
 func CleanExpiredSessions() error {
 	_, err := DB.Exec(`DELETE FROM sessions WHERE expires_at < ?`, time.Now().Unix())
 	return err
+}
+
+// ==================== OAUTH ====================
+
+// FindUserByEmail looks up a user by email (case-insensitive). Returns
+// sql.ErrNoRows if no user has that email.
+func FindUserByEmail(email string) (*User, error) {
+	var u User
+	err := DB.QueryRow(`SELECT id, email, name, picture, created_at, updated_at FROM users WHERE email = ? COLLATE NOCASE`, email).
+		Scan(&u.ID, &u.Email, &u.Name, &u.Picture, &u.CreatedAt, &u.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+// CreateUser creates a new user row. email may be empty (e.g. a provider
+// that didn't grant an email scope).
+func CreateUser(email, name, picture string) (*User, error) {
+	res, err := DB.Exec(`INSERT INTO users (email, name, picture) VALUES (?, ?, ?)`, email, name, picture)
+	if err != nil {
+		return nil, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	return GetUserByID(id)
+}
+
+func GetUserByID(id int64) (*User, error) {
+	var u User
+	err := DB.QueryRow(`SELECT id, email, name, picture, created_at, updated_at FROM users WHERE id = ?`, id).
+		Scan(&u.ID, &u.Email, &u.Name, &u.Picture, &u.CreatedAt, &u.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+// UpdateUserProfile fills in name/picture on an existing user, but only for
+// fields that are currently empty - a later login (possibly via a provider
+// with a sparser profile) never blanks out a value learned earlier.
+func UpdateUserProfile(id int64, name, picture string) error {
+	_, err := DB.Exec(`
+		UPDATE users
+		SET name = CASE WHEN name = '' THEN ? ELSE name END,
+		    picture = CASE WHEN picture = '' THEN ? ELSE picture END,
+		    updated_at = strftime('%s', 'now')
+		WHERE id = ?`, name, picture, id)
+	return err
+}
+
+// FindOAuthIdentity looks up a linked identity by provider + subject.
+// Returns sql.ErrNoRows if none exists.
+func FindOAuthIdentity(provider, subject string) (*OAuthIdentity, error) {
+	var oi OAuthIdentity
+	err := DB.QueryRow(`SELECT id, user_id, provider, subject, email, created_at FROM oauth_identities WHERE provider = ? AND subject = ?`, provider, subject).
+		Scan(&oi.ID, &oi.UserID, &oi.Provider, &oi.Subject, &oi.Email, &oi.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &oi, nil
+}
+
+// CreateOAuthIdentity links a provider identity to an existing user.
+func CreateOAuthIdentity(userID int64, provider, subject, email string) (*OAuthIdentity, error) {
+	res, err := DB.Exec(`INSERT INTO oauth_identities (user_id, provider, subject, email) VALUES (?, ?, ?, ?)`, userID, provider, subject, email)
+	if err != nil {
+		return nil, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	var oi OAuthIdentity
+	err = DB.QueryRow(`SELECT id, user_id, provider, subject, email, created_at FROM oauth_identities WHERE id = ?`, id).
+		Scan(&oi.ID, &oi.UserID, &oi.Provider, &oi.Subject, &oi.Email, &oi.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &oi, nil
 }
 
 // ==================== STATS ====================

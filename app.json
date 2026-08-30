@@ -21,6 +21,14 @@
       "description": "Application environment",
       "value": "production",
       "required": true
+    },
+    "OAUTH_GOOGLE_CLIENT_ID": {
+      "description": "Google OAuth client ID - enables \"Sign in with Google\" (leave unset to disable)",
+      "required": false
+    },
+    "OAUTH_GOOGLE_CLIENT_SECRET": {
+      "description": "Google OAuth client secret (treat as a secret)",
+      "required": false
     }
   }
 }

@@ -75,21 +75,28 @@
             document.documentElement.lang = window.currentLang;
         })();
 
-        // Translation helper function
+        // Translation helper function. Falls back to the default language
+        // when the current language is missing a specific key (a partial
+        // translation), rather than showing the raw dotted key.
         function t(key, params) {
-            const lang = window.currentLang;
-            const keys = key.split('.');
-            let value = window.translations[lang];
-
-            for (const k of keys) {
-                if (value && typeof value === 'object' && k in value) {
-                    value = value[k];
-                } else {
-                    return key;
+            function lookup(lang) {
+                const keys = key.split('.');
+                let value = window.translations[lang];
+                for (const k of keys) {
+                    if (value && typeof value === 'object' && k in value) {
+                        value = value[k];
+                    } else {
+                        return undefined;
+                    }
                 }
+                return typeof value === 'string' ? value : undefined;
             }
 
-            if (typeof value !== 'string') return key;
+            let value = lookup(window.currentLang);
+            if (value === undefined && window.currentLang !== window.defaultLang) {
+                value = lookup(window.defaultLang);
+            }
+            if (value === undefined) return key;
 
             // Replace {{ "{{" }}param{{ "}}" }} placeholders
             if (params) {

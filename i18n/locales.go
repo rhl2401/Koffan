@@ -107,17 +107,11 @@ func Init() error {
 	return nil
 }
 
-// Get retrieves a translation for a key in format "section.key"
-func Get(lang, key string) string {
-	localesMu.RLock()
-	locale, ok := locales[lang]
-	if !ok {
-		locale = locales[defaultLang]
-	}
-	localesMu.RUnlock()
-
+// lookup traverses a locale's raw map for a dotted key, returning the
+// string value and whether the full path resolved to a string.
+func lookup(locale *Locale, key string) (string, bool) {
 	if locale == nil {
-		return key
+		return "", false
 	}
 
 	parts := strings.Split(key, ".")
@@ -126,23 +120,40 @@ func Get(lang, key string) string {
 	for i, part := range parts {
 		val, exists := current[part]
 		if !exists {
-			return key
+			return "", false
 		}
 
 		if i == len(parts)-1 {
-			if str, ok := val.(string); ok {
-				return str
-			}
-			return key
+			str, ok := val.(string)
+			return str, ok
 		}
 
-		if next, ok := val.(map[string]interface{}); ok {
-			current = next
-		} else {
-			return key
+		next, ok := val.(map[string]interface{})
+		if !ok {
+			return "", false
 		}
+		current = next
 	}
 
+	return "", false
+}
+
+// Get retrieves a translation for a key in format "section.key". If lang
+// is missing the key (a partial translation, e.g. a newer key not yet
+// added to every locale file), it falls back to the default language
+// before finally returning the raw key.
+func Get(lang, key string) string {
+	localesMu.RLock()
+	locale := locales[lang]
+	fallback := locales[defaultLang]
+	localesMu.RUnlock()
+
+	if str, ok := lookup(locale, key); ok {
+		return str
+	}
+	if str, ok := lookup(fallback, key); ok {
+		return str
+	}
 	return key
 }
 

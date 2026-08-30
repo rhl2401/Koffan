@@ -54,21 +54,28 @@
             document.documentElement.lang = window.currentLang;
         })();
 
-        // Translation helper function
+        // Translation helper function. Falls back to the default language
+        // when the current language is missing a specific key (a partial
+        // translation), rather than showing the raw dotted key.
         function t(key, params) {
-            const lang = window.currentLang;
-            const keys = key.split('.');
-            let value = window.translations[lang];
-
-            for (const k of keys) {
-                if (value && typeof value === 'object' && k in value) {
-                    value = value[k];
-                } else {
-                    return key;
+            function lookup(lang) {
+                const keys = key.split('.');
+                let value = window.translations[lang];
+                for (const k of keys) {
+                    if (value && typeof value === 'object' && k in value) {
+                        value = value[k];
+                    } else {
+                        return undefined;
+                    }
                 }
+                return typeof value === 'string' ? value : undefined;
             }
 
-            if (typeof value !== 'string') return key;
+            let value = lookup(window.currentLang);
+            if (value === undefined && window.currentLang !== window.defaultLang) {
+                value = lookup(window.defaultLang);
+            }
+            if (value === undefined) return key;
 
             if (params) {
                 return value.replace(/\{\{(\w+)\}\}/g, (match, param) => {
@@ -95,11 +102,24 @@
         <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl mb-6 text-sm"
              x-text="t('login.error_rate_limited')">
         </div>
+        {{else if eq .Error "oauth_failed"}}
+        <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl mb-6 text-sm"
+             x-text="t('login.error_oauth_failed')">
+        </div>
+        {{else if eq .Error "oauth_state"}}
+        <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl mb-6 text-sm"
+             x-text="t('login.error_oauth_state')">
+        </div>
+        {{else if eq .Error "oauth_unavailable"}}
+        <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl mb-6 text-sm"
+             x-text="t('login.error_oauth_unavailable')">
+        </div>
         {{else if .Error}}
         <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl mb-6 text-sm" x-text="t('login.error_invalid')">
         </div>
         {{end}}
 
+        {{if .ShowPasswordForm}}
         <form action="/login" method="POST">
             <div class="mb-6">
                 <label for="password" class="block text-stone-600 dark:text-stone-400 text-sm font-medium mb-2" x-text="t('login.password')">
@@ -122,6 +142,30 @@
             >
             </button>
         </form>
+        {{end}}
+
+        {{if and .ShowPasswordForm .OAuthProviders}}
+        <div class="flex items-center my-6">
+            <div class="flex-grow border-t border-stone-200 dark:border-stone-700"></div>
+            <span class="mx-3 text-xs text-stone-400 dark:text-stone-500" x-text="t('login.divider_or')"></span>
+            <div class="flex-grow border-t border-stone-200 dark:border-stone-700"></div>
+        </div>
+        {{end}}
+
+        {{if .OAuthProviders}}
+        <div class="space-y-3">
+            {{range .OAuthProviders}}
+            <a
+                href="{{.StartURL}}"
+                class="block text-center w-full border border-stone-200 dark:border-stone-600 text-stone-700 dark:text-stone-100 font-medium py-3 px-4 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 dark:focus:ring-offset-stone-800 transition-colors"
+                {{if eq .Name "google"}}x-text="t('login.oauth_google')"
+                {{else if eq .Name "apple"}}x-text="t('login.oauth_apple')"
+                {{else if eq .Name "facebook"}}x-text="t('login.oauth_facebook')"
+                {{end}}
+            >{{if eq .Name "generic"}}{{.DisplayLabel}}{{end}}</a>
+            {{end}}
+        </div>
+        {{end}}
     </div>
 </body>
 </html>

@@ -17,3 +17,7 @@ services:
         value: en
       - key: APP_ENV
         value: production
+      - key: OAUTH_GOOGLE_CLIENT_ID
+        sync: false
+      - key: OAUTH_GOOGLE_CLIENT_SECRET
+        sync: false

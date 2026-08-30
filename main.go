@@ -13,6 +13,7 @@ import (
 	"shopping-list/db"
 	"shopping-list/handlers"
 	"shopping-list/i18n"
+	"shopping-list/oauth"
 	"shopping-list/webhook"
 	"time"
 
@@ -45,6 +46,10 @@ func main() {
 	// Initialize database
 	db.Init()
 	defer db.Close()
+
+	if err := oauth.Init(context.Background()); err != nil {
+		log.Printf("Some OAuth providers are disabled: %v", err)
+	}
 
 	if err := webhook.ConfigureFromEnv(db.DB); err != nil {
 		log.Printf("Outbound webhooks are disabled: %v", err)
@@ -177,6 +182,11 @@ func main() {
 	app.Get("/login", handlers.LoginPage)
 	app.Post("/login", handlers.LoginRateLimitMiddleware, handlers.Login)
 	app.Post("/logout", handlers.Logout)
+
+	// OAuth routes (before middleware)
+	app.Get("/auth/:provider/start", handlers.OAuthStart)
+	app.Get("/auth/:provider/callback", handlers.OAuthCallback)
+	app.Post("/auth/:provider/callback", handlers.OAuthCallback) // Apple response_mode=form_post
 
 	// i18n API (before auth middleware - needed for login page)
 	app.Get("/locales", handlers.GetLocales)

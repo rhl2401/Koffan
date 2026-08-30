@@ -190,6 +190,12 @@ func runMigrations() {
 
 	// Migration: Add show_completed to lists
 	migrateListShowCompleted()
+
+	// Migration: OAuth users and identities support
+	migrateOAuthUsers()
+
+	// Migration: Add user_id to sessions
+	migrateSessionUserID()
 }
 
 func migrateToMultipleLists() {
@@ -387,6 +393,81 @@ func migrateListShowCompleted() {
 	}
 
 	log.Println("Migration completed: List show_completed added")
+}
+
+func migrateOAuthUsers() {
+	// Check if users table exists
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='users'").Scan(&count)
+	if err != nil {
+		log.Println("Migration check failed:", err)
+		return
+	}
+
+	if count > 0 {
+		return // Already migrated
+	}
+
+	log.Println("Running migration: Adding OAuth users support...")
+
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			email TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
+			name TEXT DEFAULT '',
+			picture TEXT DEFAULT '',
+			created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+			updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+		);
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email COLLATE NOCASE) WHERE email <> '';
+	`)
+	if err != nil {
+		log.Println("Migration failed - creating users table:", err)
+		return
+	}
+
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS oauth_identities (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			provider TEXT NOT NULL,
+			subject TEXT NOT NULL,
+			email TEXT DEFAULT '',
+			created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+			UNIQUE(provider, subject)
+		);
+		CREATE INDEX IF NOT EXISTS idx_oauth_identities_user ON oauth_identities(user_id);
+	`)
+	if err != nil {
+		log.Println("Migration failed - creating oauth_identities table:", err)
+		return
+	}
+
+	log.Println("Migration completed: OAuth users support added")
+}
+
+func migrateSessionUserID() {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('sessions') WHERE name='user_id'").Scan(&count)
+	if err != nil {
+		log.Println("Migration check failed:", err)
+		return
+	}
+
+	if count > 0 {
+		return // Already migrated
+	}
+
+	log.Println("Running migration: Adding user_id to sessions...")
+
+	_, err = DB.Exec("ALTER TABLE sessions ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE")
+	if err != nil {
+		log.Println("Migration failed - adding user_id to sessions:", err)
+		return
+	}
+
+	log.Println("Migration completed: sessions.user_id added")
 }
 
 func Close() {

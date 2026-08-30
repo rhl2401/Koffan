@@ -159,6 +159,19 @@ docker-compose up -d
 | `WEBHOOK_URL` | *(disabled)* | HTTP or HTTPS endpoint for outbound item events |
 | `WEBHOOK_SECRET` | *(none)* | Secret used to sign webhook payloads with HMAC-SHA256 |
 | `WEBHOOK_EVENTS` | *(all item events)* | Comma-separated filter: `item.created`, `item.updated`, `item.completed`, `item.deleted` |
+| `DISABLE_PASSWORD_AUTH` | `false` | Hide password login once at least one OAuth provider below is configured (ignored, with a warning, if none are) |
+| `OAUTH_REDIRECT_BASE_URL` | *(derived from request)* | Public base URL used to build OAuth callback URLs, e.g. `https://koffan.example.com`. Recommended in production |
+| `OAUTH_GENERIC_ISSUER_URL` | *(disabled)* | Enables a generic OIDC sign-in button. Issuer URL of any standards-compliant OIDC provider (discovery is fetched from `{issuer}/.well-known/openid-configuration`) |
+| `OAUTH_GENERIC_CLIENT_ID` | *(disabled)* | Client ID for the generic OIDC provider |
+| `OAUTH_GENERIC_CLIENT_SECRET` | *(disabled)* | Client secret for the generic OIDC provider |
+| `OAUTH_GENERIC_SCOPES` | `openid profile email` | Space-separated scopes requested from the generic OIDC provider |
+| `OAUTH_GENERIC_BUTTON_LABEL` | `Sign in with SSO` | Label shown on the generic provider's sign-in button |
+| `OAUTH_GOOGLE_CLIENT_ID` | *(disabled)* | Enables "Sign in with Google". Client ID from Google Cloud Console |
+| `OAUTH_GOOGLE_CLIENT_SECRET` | *(disabled)* | Client secret from Google Cloud Console |
+| `OAUTH_APPLE_CLIENT_ID` | *(disabled)* | Enables "Sign in with Apple". Your Apple Services ID |
+| `OAUTH_APPLE_CLIENT_SECRET` | *(disabled)* | Pre-generated Apple client-secret JWT (signed with your key/Team ID/Key ID out-of-band; Koffan does not generate or rotate it - regenerate before it expires, up to every 6 months) |
+| `OAUTH_FACEBOOK_APP_ID` | *(disabled)* | Enables "Sign in with Facebook". App ID from Facebook Developer |
+| `OAUTH_FACEBOOK_APP_SECRET` | *(disabled)* | App secret from Facebook Developer |
 
 ### Outbound Webhooks
 
@@ -172,6 +185,23 @@ go run .
 ```
 
 See the [Webhook documentation](https://github.com/PanSalut/Koffan/wiki/Webhooks) for events, payloads, signature verification, retry behavior, and integration guidance.
+
+### OAuth Login
+
+Koffan can authenticate users via Google, Apple, Facebook, or a generic OIDC provider (any standards-compliant identity provider, e.g. Authelia, Keycloak, Authentik, PocketID), in addition to the default shared password. Set the env vars for whichever provider(s) you want - each one activates independently as soon as its required vars are set. There is no per-user permission model yet: any account that signs in, by password or OAuth, can do anything.
+
+```bash
+OAUTH_REDIRECT_BASE_URL=https://koffan.example.com \
+OAUTH_GENERIC_ISSUER_URL=https://idp.example.com \
+OAUTH_GENERIC_CLIENT_ID=koffan \
+OAUTH_GENERIC_CLIENT_SECRET=replace-with-your-client-secret \
+OAUTH_GENERIC_BUTTON_LABEL="Sign in with SSO" \
+go run .
+```
+
+Register the callback URL with your provider as `{OAUTH_REDIRECT_BASE_URL}/auth/{provider}/callback`, e.g. `https://koffan.example.com/auth/generic/callback` (or `/auth/google/callback`, `/auth/apple/callback`, `/auth/facebook/callback`).
+
+If someone signs in via two different providers using the same email address, both sign-ins resolve to the same Koffan account. Once at least one OAuth provider is working, set `DISABLE_PASSWORD_AUTH=true` to hide the password form entirely.
 
 ## Deploy to Your Server
 

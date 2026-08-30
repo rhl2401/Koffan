@@ -109,7 +109,14 @@
     "password_placeholder": "Enter password...",
     "submit": "Log in",
     "error_invalid": "Invalid password",
-    "error_rate_limited": "Too many login attempts. Please try again later."
+    "error_rate_limited": "Too many login attempts. Please try again later.",
+    "error_oauth_failed": "Sign-in failed. Please try again.",
+    "error_oauth_state": "Your sign-in session expired. Please try again.",
+    "error_oauth_unavailable": "That sign-in method isn't available.",
+    "divider_or": "or",
+    "oauth_google": "Sign in with Google",
+    "oauth_apple": "Sign in with Apple",
+    "oauth_facebook": "Sign in with Facebook"
   },
   "confirm": {
     "delete_item": "Delete \"{{name}}\"?",
@@ -156,7 +163,8 @@
     "apply_failed": "Failed to apply",
     "session_failed": "Session creation failed",
     "database_unavailable": "Database temporarily unavailable, please retry",
-    "database_error": "Database error"
+    "database_error": "Database error",
+    "password_auth_disabled": "Password login is disabled"
   },
   "offline": {
     "title": "Offline mode",

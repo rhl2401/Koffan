@@ -9,6 +9,8 @@ import (
 	"os"
 	"shopping-list/db"
 	"shopping-list/i18n"
+	"shopping-list/oauth"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -58,6 +60,26 @@ func sessionIDPrefix(sessionID string) string {
 	return sessionID[:prefixLength]
 }
 
+// OAuthProviderView is the template-facing view of an enabled OAuth provider.
+type OAuthProviderView struct {
+	Name         string
+	DisplayLabel string
+	StartURL     string
+}
+
+func oauthProviderViews() []OAuthProviderView {
+	enabled := oauth.Enabled()
+	views := make([]OAuthProviderView, 0, len(enabled))
+	for _, p := range enabled {
+		views = append(views, OAuthProviderView{
+			Name:         p.Name(),
+			DisplayLabel: p.DisplayName(),
+			StartURL:     "/auth/" + p.Name() + "/start",
+		})
+	}
+	return views
+}
+
 // LoginPage renders the login page
 func LoginPage(c *fiber.Ctx) error {
 	// Check if already logged in
@@ -69,15 +91,21 @@ func LoginPage(c *fiber.Ctx) error {
 		}
 	}
 	return c.Render("login", fiber.Map{
-		"Error":        c.Query("error"),
-		"Translations": i18n.GetAllLocales(),
-		"Locales":      i18n.AvailableLocales(),
-		"DefaultLang":  i18n.GetDefaultLang(),
+		"Error":            c.Query("error"),
+		"Translations":     i18n.GetAllLocales(),
+		"Locales":          i18n.AvailableLocales(),
+		"DefaultLang":      i18n.GetDefaultLang(),
+		"ShowPasswordForm": oauth.PasswordAuthAllowed(),
+		"OAuthProviders":   oauthProviderViews(),
 	}, "")
 }
 
 // Login handles login form submission
 func Login(c *fiber.Ctx) error {
+	if !oauth.PasswordAuthAllowed() {
+		return sendError(c, 403, "error.password_auth_disabled")
+	}
+
 	ip := c.IP()
 	password := c.FormValue("password")
 
@@ -148,9 +176,9 @@ func AuthMiddleware(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
-	// Skip auth for login page and static files
+	// Skip auth for login page, static files, and the OAuth start/callback routes
 	path := c.Path()
-	if path == "/login" || path == "/static" || len(path) > 7 && path[:8] == "/static/" {
+	if path == "/login" || path == "/static" || strings.HasPrefix(path, "/static/") || strings.HasPrefix(path, "/auth/") {
 		return c.Next()
 	}
 

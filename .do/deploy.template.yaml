@@ -19,3 +19,7 @@ spec:
           type: SECRET
         - key: DB_PATH
           value: /data/shopping.db
+        - key: OAUTH_GOOGLE_CLIENT_ID
+          value: ""
+        - key: OAUTH_GOOGLE_CLIENT_SECRET
+          type: SECRET
