@@ -112,7 +112,13 @@
     "error_rate_limited": "Příliš mnoho pokusů. Zkus to později.",
     "username": "Uživatelské jméno",
     "username_placeholder": "Tvoje uživatelské jméno",
-    "error_invalid_account": "Neplatné uživatelské jméno nebo heslo"
+    "error_invalid_account": "Neplatné uživatelské jméno nebo heslo",
+    "sso": "Přihlásit se přes SSO",
+    "or": "nebo",
+    "error_oidc_failed": "Jednotné přihlášení se nezdařilo. Zkus to znovu.",
+    "error_oidc_state": "Pokus o přihlášení vypršel nebo nezačal tady. Zkus to znovu.",
+    "error_oidc_unavailable": "Jednotné přihlášení teď není dostupné. Zkus to za chvíli.",
+    "error_oidc_no_account": "K tomuto přihlášení není připojen žádný účet. Požádej administrátora, aby ho vytvořil."
   },
   "confirm": {
     "delete_item": "Smazat „{{name}}“?",
@@ -162,7 +168,8 @@
     "database_error": "Chyba databáze",
     "forbidden": "K této akci nemáš oprávnění",
     "no_workspace": "Zatím nejsi v žádném prostoru",
-    "workspace_changed": "Tato stránka patří do jiného prostoru. Načítám znovu..."
+    "workspace_changed": "Tato stránka patří do jiného prostoru. Načítám znovu...",
+    "password_login_disabled": "Přihlášení heslem je vypnuté. Použij jednotné přihlášení."
   },
   "offline": {
     "title": "Offline režim",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Zakládají a mažou účty a nastavují nové heslo těm, kdo své zapomněli. Samostatná registrace neexistuje: administrátor nastaví heslo a předá ho dané osobě. Nový účet může mít i práva administrátora.",
     "admin_about_workspaces": "Spravují každý prostor: přidávají a odebírají lidi, mění jeho název a ikonu nebo ho mažou, i když v něm sami nejsou.",
     "admin_about_privacy": "Cizí seznamy nevidí, dokud se do prostoru nepřipojí. Po připojení se objeví v seznamu jeho členů.",
-    "admin_about_first": "První účet, vytvořený z ADMIN_USER, je administrátor."
+    "admin_about_first": "První účet, vytvořený z ADMIN_USER, je administrátor.",
+    "sso_badge": "SSO",
+    "sso_account": "Přihlašuješ se přes jednotné přihlášení. Heslo spravuje tvůj poskytovatel identity."
   }
 }

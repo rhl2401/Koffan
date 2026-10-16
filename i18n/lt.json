@@ -112,7 +112,13 @@
 		"error_rate_limited": "Per daug bandymų prisijungti. Bandykite vėliau.",
 		"username": "Naudotojo vardas",
 		"username_placeholder": "Jūsų naudotojo vardas",
-		"error_invalid_account": "Neteisingas naudotojo vardas arba slaptažodis"
+		"error_invalid_account": "Neteisingas naudotojo vardas arba slaptažodis",
+		"sso": "Prisijungti su SSO",
+		"or": "arba",
+		"error_oidc_failed": "Vieningas prisijungimas nepavyko. Bandykite dar kartą.",
+		"error_oidc_state": "Prisijungimo bandymas baigė galioti arba nebuvo pradėtas čia. Bandykite dar kartą.",
+		"error_oidc_unavailable": "Vieningas prisijungimas šiuo metu nepasiekiamas. Bandykite po akimirkos.",
+		"error_oidc_no_account": "Su šiuo prisijungimu nesusieta jokia paskyra. Paprašykite administratoriaus ją sukurti."
 	},
 	"confirm": {
 		"delete_item": "Ištrinti \"{{name}}\"?",
@@ -162,7 +168,8 @@
 		"database_error": "Duomenų bazės klaida",
 		"forbidden": "Neturite teisės to daryti",
 		"no_workspace": "Dar nepriklausote jokiai erdvei",
-		"workspace_changed": "Šis puslapis priklauso kitai erdvei. Įkeliama iš naujo..."
+		"workspace_changed": "Šis puslapis priklauso kitai erdvei. Įkeliama iš naujo...",
+		"password_login_disabled": "Prisijungimas slaptažodžiu išjungtas. Naudokite vieningą prisijungimą."
 	},
 	"offline": {
 		"title": "Neprisijungęs rėžimas",
@@ -360,6 +367,8 @@
 		"admin_about_accounts": "Kuria ir ištrina paskyras, taip pat nustato naują slaptažodį tiems, kurie pamiršo savąjį. Savarankiškos registracijos nėra: administratorius nustato slaptažodį ir perduoda jį asmeniui. Nauja paskyra taip pat gali gauti administratoriaus teises.",
 		"admin_about_workspaces": "Tvarko kiekvieną erdvę: prideda ir šalina žmones, keičia jos pavadinimą ir piktogramą arba ją ištrina, net jei patys jai nepriklauso.",
 		"admin_about_privacy": "Nemato kitų žmonių sąrašų, kol neprisijungia prie erdvės. Prisijungę atsiranda jos narių sąraše.",
-		"admin_about_first": "Pirmoji paskyra, sukurta pagal ADMIN_USER, turi administratoriaus teises."
+		"admin_about_first": "Pirmoji paskyra, sukurta pagal ADMIN_USER, turi administratoriaus teises.",
+		"sso_badge": "SSO",
+		"sso_account": "Prisijungiate per vieningą prisijungimą. Jūsų slaptažodį tvarko tapatybės teikėjas."
 	}
 }

@@ -112,7 +112,13 @@
     "error_rate_limited": "Príliš veľa pokusov o prihlásenie. Skús to opäť neskôr.",
     "username": "Používateľské meno",
     "username_placeholder": "Tvoje používateľské meno",
-    "error_invalid_account": "Neplatné používateľské meno alebo heslo"
+    "error_invalid_account": "Neplatné používateľské meno alebo heslo",
+    "sso": "Prihlásiť sa cez SSO",
+    "or": "alebo",
+    "error_oidc_failed": "Jednotné prihlásenie zlyhalo. Skús to znova.",
+    "error_oidc_state": "Pokus o prihlásenie vypršal alebo nezačal tu. Skús to znova.",
+    "error_oidc_unavailable": "Jednotné prihlásenie teraz nie je dostupné. Skús to o chvíľu.",
+    "error_oidc_no_account": "K tomuto prihláseniu nie je pripojený žiadny účet. Požiadaj administrátora, aby ho vytvoril."
   },
   "confirm": {
     "delete_item": "Odstrániť \"{{name}}\"?",
@@ -162,7 +168,8 @@
     "database_error": "Chyba databázy",
     "forbidden": "Na túto akciu nemáš oprávnenie",
     "no_workspace": "Zatiaľ nie si v žiadnom priestore",
-    "workspace_changed": "Táto stránka patrí do iného priestoru. Načítavam znova..."
+    "workspace_changed": "Táto stránka patrí do iného priestoru. Načítavam znova...",
+    "password_login_disabled": "Prihlásenie heslom je vypnuté. Použi jednotné prihlásenie."
   },
   "offline": {
     "title": "Offline režim",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Zakladajú a odstraňujú účty a nastavujú nové heslo tým, ktorí svoje zabudli. Samostatná registrácia neexistuje: administrátor nastaví heslo a odovzdá ho príslušnej osobe. Nový účet môže mať aj práva administrátora.",
     "admin_about_workspaces": "Spravujú každý priestor: pridávajú a odoberajú ľudí, menia jeho názov a ikonku alebo ho odstraňujú, aj keď v ňom sami nie sú.",
     "admin_about_privacy": "Cudzie zoznamy nevidia, kým sa do priestoru nepripoja. Po pripojení sa zobrazia v zozname jeho členov.",
-    "admin_about_first": "Prvý účet, vytvorený z ADMIN_USER, je administrátor."
+    "admin_about_first": "Prvý účet, vytvorený z ADMIN_USER, je administrátor.",
+    "sso_badge": "SSO",
+    "sso_account": "Prihlasuješ sa cez jednotné prihlásenie. Heslo spravuje tvoj poskytovateľ identity."
   }
 }

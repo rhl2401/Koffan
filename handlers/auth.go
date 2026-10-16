@@ -74,8 +74,11 @@ func LoginPage(c *fiber.Ctx) error {
 		}
 	}
 	return c.Render("login", withPageI18n(c, fiber.Map{
-		"Error":     c.Query("error"),
-		"MultiUser": MultiUser(),
+		"Error":         c.Query("error"),
+		"MultiUser":     MultiUser(),
+		"PasswordLogin": PasswordLoginAllowed(),
+		"SSOProviders":  SSOProviders(),
+		"OIDCError":     knownCode(oidcErrors, c.Query("error")),
 	}), "")
 }
 
@@ -83,6 +86,9 @@ func LoginPage(c *fiber.Ctx) error {
 func Login(c *fiber.Ctx) error {
 	if MultiUser() && crossOriginRequest(c) {
 		return sendError(c, fiber.StatusForbidden, "error.forbidden")
+	}
+	if !PasswordLoginAllowed() {
+		return sendError(c, fiber.StatusForbidden, "error.password_login_disabled")
 	}
 
 	ip := c.IP()

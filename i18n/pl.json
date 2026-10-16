@@ -112,7 +112,13 @@
     "error_rate_limited": "Zbyt wiele prób logowania. Spróbuj ponownie później.",
     "username": "Nazwa użytkownika",
     "username_placeholder": "Twoja nazwa użytkownika",
-    "error_invalid_account": "Nieprawidłowa nazwa użytkownika lub hasło"
+    "error_invalid_account": "Nieprawidłowa nazwa użytkownika lub hasło",
+    "sso": "Zaloguj się przez SSO",
+    "or": "lub",
+    "error_oidc_failed": "Logowanie jednokrotne nie powiodło się. Spróbuj ponownie.",
+    "error_oidc_state": "Próba logowania wygasła lub nie rozpoczęła się tutaj. Spróbuj ponownie.",
+    "error_oidc_unavailable": "Logowanie jednokrotne jest teraz niedostępne. Spróbuj za chwilę.",
+    "error_oidc_no_account": "Z tym logowaniem nie jest powiązane żadne konto. Poproś administratora o jego utworzenie."
   },
   "confirm": {
     "delete_item": "Usunąć \"{{name}}\"?",
@@ -162,7 +168,8 @@
     "database_error": "Błąd bazy danych",
     "forbidden": "Nie masz uprawnień do tej operacji",
     "no_workspace": "Nie należysz jeszcze do żadnej przestrzeni",
-    "workspace_changed": "Ta strona należy do innej przestrzeni. Ładuję ponownie..."
+    "workspace_changed": "Ta strona należy do innej przestrzeni. Ładuję ponownie...",
+    "password_login_disabled": "Logowanie hasłem jest wyłączone. Użyj logowania jednokrotnego."
   },
   "offline": {
     "title": "Tryb offline",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Zakładają i usuwają konta oraz ustawiają nowe hasło osobom, które zapomniały swojego. Nie ma samodzielnej rejestracji: administrator ustawia hasło i przekazuje je osobie. Nowe konto może też dostać uprawnienia administratora.",
     "admin_about_workspaces": "Zarządzają każdą przestrzenią: dodają i usuwają osoby, zmieniają nazwę i ikonę albo usuwają ją, także gdy sami do niej nie należą.",
     "admin_about_privacy": "Nie widzą cudzych list, dopóki nie dołączą do przestrzeni. Po dołączeniu pojawiają się na liście jej członków.",
-    "admin_about_first": "Pierwsze konto, założone z ADMIN_USER, jest administratorem."
+    "admin_about_first": "Pierwsze konto, założone z ADMIN_USER, jest administratorem.",
+    "sso_badge": "SSO",
+    "sso_account": "Logujesz się przez logowanie jednokrotne. Twoim hasłem zarządza dostawca tożsamości."
   }
 }

@@ -210,6 +210,9 @@ func runMigrations() {
 
 	// Migration: users, workspaces and per-workspace data
 	migrateWorkspaces()
+
+	// Migration: single sign-on identity links
+	migrateOIDC()
 }
 
 func migrateToMultipleLists() {

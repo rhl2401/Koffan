@@ -195,6 +195,18 @@ docker compose -f docker-compose.local.yaml up -d
 | `WEBHOOK_URL` | *(disabled)* | HTTP or HTTPS endpoint for outbound item events |
 | `WEBHOOK_SECRET` | *(none)* | Secret used to sign webhook payloads with HMAC-SHA256 |
 | `WEBHOOK_EVENTS` | *(all item events)* | Comma-separated filter: `item.created`, `item.updated`, `item.completed`, `item.deleted` |
+| `OIDC_ISSUER_URL` | *(disabled)* | With `MULTI_USER`: issuer URL of an OpenID Connect provider; together with the two settings below it enables single sign-on ([details](#single-sign-on-with-openid-connect-optional)) |
+| `OIDC_CLIENT_ID` | *(disabled)* | Client id registered at the provider |
+| `OIDC_CLIENT_SECRET` | *(disabled)* | Client secret registered at the provider |
+| `OIDC_REDIRECT_URL` | *(from the request)* | The callback URL registered at the provider, e.g. `https://koffan.example.com/auth/oidc/callback`; set it when Koffan cannot tell its public address |
+| `OIDC_SCOPES` | `openid profile email` | Space-separated scopes to request |
+| `OIDC_BUTTON_LABEL` | *(translated "Sign in with SSO")* | Text of the sign-in button |
+| `OIDC_USERNAME_CLAIM` | `preferred_username` | Claim that becomes the Koffan username (the e-mail address is used when the claim is missing) |
+| `OIDC_AUTO_CREATE_USERS` | `true` | Create an account on the first sign-in; `false` admits only accounts an administrator created |
+| `OIDC_DEFAULT_WORKSPACE_ID` | *(none)* | Workspace that automatically created accounts join |
+| `OIDC_GROUPS_CLAIM` | `groups` | Claim that lists the person's groups |
+| `OIDC_ADMIN_GROUP` | *(none)* | Members of this group are administrators, everyone else is not; checked on every sign-in |
+| `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | Hide the username and password form; ignored unless single sign-on is configured |
 
 ### Accounts and Workspaces (optional)
 
@@ -238,6 +250,34 @@ ADMIN_USER=admin
 
 - Login rate limiting counts attempts per client IP, and Koffan does not read forwarded IP headers. Behind a reverse proxy all accounts therefore share one limit, and one person's wrong passwords can lock everyone out for `LOGIN_LOCKOUT_MINUTES`. Set `LOGIN_MAX_ATTEMPTS=0` and limit login attempts at the proxy instead (see [Login Rate Limiting](#login-rate-limiting)).
 - With accounts, Koffan refuses changes and live updates requested by pages from other origins. Over HTTPS the browser reports where a request comes from. Over plain HTTP, Koffan compares the request's `Origin` with its `Host`, so a proxy serving Koffan over plain HTTP must pass the original `Host` header or set `X-Forwarded-Host`. Caddy and Traefik do this by default; with nginx add `proxy_set_header Host $host;`.
+
+#### Single sign-on with OpenID Connect (optional)
+
+With accounts enabled, people can also sign in through an OpenID Connect provider you already run, such as Authelia, Authentik, Keycloak, PocketID or Zitadel, or a hosted one such as Google. Without the `OIDC_*` settings nothing changes: the username and password form stays as it is.
+
+1. Register Koffan at your provider as a confidential web client (authorization code flow; PKCE is sent too). The redirect URL is `https://your-koffan/auth/oidc/callback`. Let it release the `openid`, `profile` and `email` scopes, and the `preferred_username` claim if it has one.
+2. Set `MULTI_USER=true`, `OIDC_ISSUER_URL` (the provider's issuer, where `/.well-known/openid-configuration` lives), `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET`. Behind a reverse proxy, also set `OIDC_REDIRECT_URL` to the URL you registered unless the proxy passes `X-Forwarded-Proto` and `X-Forwarded-Host`.
+3. Restart Koffan and look for `Single sign-on is enabled` in the log. The login page shows a *Sign in with SSO* button (rename it with `OIDC_BUTTON_LABEL`).
+
+```bash
+MULTI_USER=true
+APP_PASSWORD=choose-a-long-password
+OIDC_ISSUER_URL=https://auth.example.com
+OIDC_CLIENT_ID=koffan
+OIDC_CLIENT_SECRET=replace-with-the-secret-from-your-provider
+OIDC_REDIRECT_URL=https://koffan.example.com/auth/oidc/callback
+```
+
+How identities become accounts:
+
+- Someone who signed in before is recognised by the subject the provider gives them, even after a username change at the provider.
+- Otherwise the `preferred_username` claim (or another one, see `OIDC_USERNAME_CLAIM`), and failing that the e-mail address, is compared with the existing usernames. A match links that account to the identity: create an account ahead of time with the same username and the person can use either their password or single sign-on. Only let a provider you trust decide who signs in, as this also links administrator accounts.
+- Otherwise an account is created without a password (it shows an *SSO* badge on the Workspaces page), named after the claim; with `OIDC_DEFAULT_WORKSPACE_ID` it joins that workspace, otherwise an administrator adds it to one. Set `OIDC_AUTO_CREATE_USERS=false` to turn this off and admit only accounts you created.
+- With `OIDC_ADMIN_GROUP`, the provider's groups decide who is an administrator on every sign-in, both granting and revoking the flag. The last administrator is never demoted. Without it, administrators are only made on the Workspaces page.
+- The display name follows the provider's `name` claim. Accounts without a password cannot change one; an administrator can set a password for them.
+- `OIDC_DISABLE_PASSWORD_LOGIN=true` hides the password form, so everyone goes through the provider. It is ignored while single sign-on is not configured, so a mistake cannot lock everyone out. While it is on, nobody can sign in with a password, administrators included, so make sure more than one administrator can sign in at the provider.
+- The provider is discovered on the first sign-in attempt and retried every 30 seconds while it is down, so Koffan may start before it.
+- Everything else is unchanged: sessions last seven days, the rate limit does not apply to single sign-on, and accounts, workspaces and the REST API work as described above. Signing out of Koffan does not sign out of the provider.
 
 #### Forgotten administrator password
 

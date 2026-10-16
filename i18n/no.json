@@ -112,7 +112,13 @@
     "error_rate_limited": "For mange innloggingsforsøk. Prøv igjen senere.",
     "username": "Brukernavn",
     "username_placeholder": "Ditt brukernavn",
-    "error_invalid_account": "Ugyldig brukernavn eller passord"
+    "error_invalid_account": "Ugyldig brukernavn eller passord",
+    "sso": "Logg inn med SSO",
+    "or": "eller",
+    "error_oidc_failed": "Single sign-on mislyktes. Prøv igjen.",
+    "error_oidc_state": "Innloggingsforsøket utløp eller ble ikke startet her. Prøv igjen.",
+    "error_oidc_unavailable": "Single sign-on er ikke tilgjengelig akkurat nå. Prøv igjen om et øyeblikk.",
+    "error_oidc_no_account": "Ingen konto er knyttet til denne innloggingen. Be en administrator om å opprette en."
   },
   "confirm": {
     "delete_item": "Slett \"{{name}}\"?",
@@ -162,7 +168,8 @@
     "database_error": "Databasefeil",
     "forbidden": "Du har ikke tillatelse til å gjøre det",
     "no_workspace": "Du tilhører ingen gruppe ennå",
-    "workspace_changed": "Denne siden tilhører en annen gruppe. Laster inn på nytt..."
+    "workspace_changed": "Denne siden tilhører en annen gruppe. Laster inn på nytt...",
+    "password_login_disabled": "Innlogging med passord er slått av. Bruk single sign-on."
   },
   "offline": {
     "title": "Frakoblet modus",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Oppretter og sletter kontoer, og setter nytt passord for dem som har glemt sitt. Det finnes ingen selvregistrering: en administrator setter passordet og gir det videre til personen. En ny konto kan også gjøres til administrator.",
     "admin_about_workspaces": "Administrerer alle grupper: legger til og fjerner personer, endrer navn og ikon eller sletter gruppen, selv om de ikke selv er med i den.",
     "admin_about_privacy": "Kan ikke se andres lister med mindre de blir med i gruppen. Etter at de har blitt med, vises de i medlemslisten.",
-    "admin_about_first": "Den første kontoen, opprettet fra ADMIN_USER, er en administrator."
+    "admin_about_first": "Den første kontoen, opprettet fra ADMIN_USER, er en administrator.",
+    "sso_badge": "SSO",
+    "sso_account": "Du logger inn med single sign-on. Passordet ditt håndteres av identitetsleverandøren din."
   }
 }

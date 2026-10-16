@@ -112,7 +112,13 @@
     "error_rate_limited": "Te veel aanmeldpogingen. Probeer het later opnieuw.",
     "username": "Gebruikersnaam",
     "username_placeholder": "Je gebruikersnaam",
-    "error_invalid_account": "Ongeldige gebruikersnaam of wachtwoord"
+    "error_invalid_account": "Ongeldige gebruikersnaam of wachtwoord",
+    "sso": "Aanmelden met SSO",
+    "or": "of",
+    "error_oidc_failed": "Aanmelden via single sign-on is mislukt. Probeer het opnieuw.",
+    "error_oidc_state": "De aanmeldpoging is verlopen of is niet hier gestart. Probeer het opnieuw.",
+    "error_oidc_unavailable": "Single sign-on is op dit moment niet beschikbaar. Probeer het zo nog eens.",
+    "error_oidc_no_account": "Er is geen account gekoppeld aan deze aanmelding. Vraag een beheerder er een aan te maken."
   },
   "confirm": {
     "delete_item": "\"{{name}}\" verwijderen?",
@@ -162,7 +168,8 @@
     "database_error": "Databasefout",
     "forbidden": "Je hebt hier geen toestemming voor",
     "no_workspace": "Je zit nog in geen enkele groep",
-    "workspace_changed": "Deze pagina hoort bij een andere groep. Opnieuw laden..."
+    "workspace_changed": "Deze pagina hoort bij een andere groep. Opnieuw laden...",
+    "password_login_disabled": "Aanmelden met wachtwoord is uitgeschakeld. Gebruik single sign-on."
   },
   "offline": {
     "title": "Offline-Modus",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Ze maken accounts aan en verwijderen ze, en stellen een nieuw wachtwoord in voor wie het wachtwoord vergeten is. Er is geen zelfregistratie: een beheerder stelt het wachtwoord in en geeft het door aan de persoon. Een nieuw account kan ook beheerder worden gemaakt.",
     "admin_about_workspaces": "Ze beheren elke groep: personen toevoegen en verwijderen, de naam en het symbool wijzigen of de groep verwijderen, ook als ze er zelf geen lid van zijn.",
     "admin_about_privacy": "Ze zien de lijsten van anderen pas als ze lid worden van de groep. Daarna staan ze in de ledenlijst van de groep.",
-    "admin_about_first": "Het eerste account, aangemaakt vanuit ADMIN_USER, is een beheerder."
+    "admin_about_first": "Het eerste account, aangemaakt vanuit ADMIN_USER, is een beheerder.",
+    "sso_badge": "SSO",
+    "sso_account": "Je meldt je aan met single sign-on. Je wachtwoord wordt beheerd door je identiteitsprovider."
   }
 }

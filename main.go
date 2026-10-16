@@ -13,6 +13,7 @@ import (
 	"shopping-list/db"
 	"shopping-list/handlers"
 	"shopping-list/i18n"
+	"shopping-list/oidc"
 	"shopping-list/webhook"
 	"strconv"
 	"strings"
@@ -90,6 +91,28 @@ func main() {
 				log.Printf("WARNING: administrator %q uses the built-in default password; sign in and change it under Your account on the Workspaces page", admin)
 			}
 		}
+	}
+
+	// Single sign-on needs accounts. Discovery runs in the background so a
+	// provider that starts after Koffan (same compose file) only delays the
+	// first login, never the start.
+	switch {
+	case oidc.Configured() && !handlers.MultiUser():
+		log.Printf("%s is ignored unless MULTI_USER=true", oidc.EnvIssuerURL)
+	case oidc.Configured():
+		for _, cfg := range oidc.Configs() {
+			log.Printf("Single sign-on is enabled: provider %q, issuer %s", cfg.Name, cfg.IssuerURL)
+			go func(name string) {
+				if _, err := oidc.Get(context.Background(), name); err != nil {
+					log.Printf("[OIDC] %v; the next login attempt retries", err)
+				}
+			}(cfg.Name)
+		}
+		if oidc.PasswordLoginDisabled() {
+			log.Println("Password login is turned off; everyone signs in through the identity provider")
+		}
+	case os.Getenv(oidc.EnvIssuerURL) != "" || os.Getenv(oidc.EnvClientID) != "" || os.Getenv(oidc.EnvClientSecret) != "":
+		log.Printf("Single sign-on is off: %s, %s and %s must all be set", oidc.EnvIssuerURL, oidc.EnvClientID, oidc.EnvClientSecret)
 	}
 
 	if v := os.Getenv("API_WORKSPACE_ID"); v != "" {
@@ -257,6 +280,10 @@ func main() {
 	app.Get("/login", handlers.LoginPage)
 	app.Post("/login", handlers.LoginRateLimitMiddleware, handlers.Login)
 	app.Post("/logout", handlers.Logout)
+
+	// Single sign-on (before middleware; only answers with MULTI_USER=true)
+	app.Get(handlers.OIDCStartPath, handlers.OIDCStart)
+	app.Get(handlers.OIDCCallbackPath, handlers.OIDCCallback)
 
 	// i18n API (before auth middleware - needed for login page)
 	app.Get("/locales", handlers.GetLocales)

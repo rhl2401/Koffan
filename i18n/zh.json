@@ -112,7 +112,13 @@
     "error_rate_limited": "登录尝试次数过多，请稍后再试。",
     "username": "用户名",
     "username_placeholder": "您的用户名",
-    "error_invalid_account": "用户名或密码错误"
+    "error_invalid_account": "用户名或密码错误",
+    "sso": "使用 SSO 登录",
+    "or": "或",
+    "error_oidc_failed": "单点登录失败，请重试。",
+    "error_oidc_state": "登录尝试已过期或并非从这里发起，请重试。",
+    "error_oidc_unavailable": "单点登录暂时不可用，请稍后再试。",
+    "error_oidc_no_account": "此登录未关联任何账户，请让管理员创建一个。"
   },
   "confirm": {
     "delete_item": "删除 \"{{name}}\"？",
@@ -162,7 +168,8 @@
     "database_error": "数据库错误",
     "forbidden": "您没有权限执行此操作",
     "no_workspace": "您还未加入任何空间",
-    "workspace_changed": "此页面属于另一个空间，正在重新加载..."
+    "workspace_changed": "此页面属于另一个空间，正在重新加载...",
+    "password_login_disabled": "密码登录已关闭，请使用单点登录。"
   },
   "offline": {
     "title": "离线模式",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "创建和删除账户，并为忘记密码的人设置新密码。不支持自助注册：由管理员设置密码并交给对方。新账户也可以设为管理员。",
     "admin_about_workspaces": "管理每个空间：添加和移除成员、修改名称和图标，或删除空间，即使自己不在其中。",
     "admin_about_privacy": "除非加入空间，否则看不到他人的列表。加入后会出现在该空间的成员列表中。",
-    "admin_about_first": "通过 ADMIN_USER 创建的第一个账户是管理员。"
+    "admin_about_first": "通过 ADMIN_USER 创建的第一个账户是管理员。",
+    "sso_badge": "SSO",
+    "sso_account": "您通过单点登录登录。您的密码由身份提供商管理。"
   }
 }

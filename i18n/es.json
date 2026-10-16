@@ -112,7 +112,13 @@
     "error_rate_limited": "Demasiados intentos de inicio de sesión. Inténtalo de nuevo más tarde.",
     "username": "Nombre de usuario",
     "username_placeholder": "Tu nombre de usuario",
-    "error_invalid_account": "Nombre de usuario o contraseña incorrectos"
+    "error_invalid_account": "Nombre de usuario o contraseña incorrectos",
+    "sso": "Iniciar sesión con SSO",
+    "or": "o",
+    "error_oidc_failed": "El inicio de sesión único ha fallado. Inténtalo de nuevo.",
+    "error_oidc_state": "El intento de inicio de sesión caducó o no se inició aquí. Inténtalo de nuevo.",
+    "error_oidc_unavailable": "El inicio de sesión único no está disponible ahora mismo. Inténtalo en un momento.",
+    "error_oidc_no_account": "No hay ninguna cuenta vinculada a este inicio de sesión. Pide a un administrador que la cree."
   },
   "confirm": {
     "delete_item": "¿Eliminar \"{{name}}\"?",
@@ -162,7 +168,8 @@
     "database_error": "Error de base de datos",
     "forbidden": "No tienes permiso para hacer eso",
     "no_workspace": "Todavía no perteneces a ningún espacio",
-    "workspace_changed": "Esta página pertenece a otro espacio. Recargando..."
+    "workspace_changed": "Esta página pertenece a otro espacio. Recargando...",
+    "password_login_disabled": "El inicio de sesión con contraseña está desactivado. Usa el inicio de sesión único."
   },
   "offline": {
     "title": "Modo sin conexión",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Crean y eliminan cuentas, y establecen una nueva contraseña para quien haya olvidado la suya. No hay registro por cuenta propia: un administrador establece la contraseña y se la entrega a la persona. Una cuenta nueva también puede convertirse en administradora.",
     "admin_about_workspaces": "Gestionan todos los espacios: añaden y quitan personas, cambian su nombre e icono o lo eliminan, incluso si no forman parte de él.",
     "admin_about_privacy": "No ven las listas de otras personas a menos que se unan al espacio. Al unirse, aparecen en su lista de miembros.",
-    "admin_about_first": "La primera cuenta, creada a partir de ADMIN_USER, es administradora."
+    "admin_about_first": "La primera cuenta, creada a partir de ADMIN_USER, es administradora.",
+    "sso_badge": "SSO",
+    "sso_account": "Inicias sesión con inicio de sesión único. Tu contraseña la gestiona tu proveedor de identidad."
   }
 }

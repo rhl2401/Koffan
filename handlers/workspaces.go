@@ -172,8 +172,10 @@ func GetWorkspacesPage(c *fiber.Ctx) error {
 	}
 
 	var users []db.User
+	ssoUsers := map[int64]bool{}
 	if user.IsAdmin {
 		users, _ = db.ListUsers()
+		ssoUsers = db.OIDCLinkedUsers()
 	}
 
 	return c.Render("workspaces", withPageI18n(c, fiber.Map{
@@ -185,6 +187,8 @@ func GetWorkspacesPage(c *fiber.Ctx) error {
 		"CanManageCurrent": canManageCurrent,
 		"CanDeleteCurrent": canManageCurrent && current != db.DefaultWorkspaceID && !apiPinnedWorkspace(current),
 		"AllUsers":         users,
+		"SSOUsers":         ssoUsers,
+		"HasPassword":      db.HasPassword(user.ID),
 		"MinPassword":      MinPasswordLength,
 		"Icons":            WorkspaceIcons,
 	}))

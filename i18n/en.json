@@ -112,7 +112,13 @@
     "error_rate_limited": "Too many login attempts. Please try again later.",
     "username": "Username",
     "username_placeholder": "Your username",
-    "error_invalid_account": "Invalid username or password"
+    "error_invalid_account": "Invalid username or password",
+    "sso": "Sign in with SSO",
+    "or": "or",
+    "error_oidc_failed": "Single sign-on failed. Please try again.",
+    "error_oidc_state": "The sign-in attempt expired or was not started here. Please try again.",
+    "error_oidc_unavailable": "Single sign-on is not available right now. Try again in a moment.",
+    "error_oidc_no_account": "No account is linked to this login. Ask an administrator to create one."
   },
   "confirm": {
     "delete_item": "Delete \"{{name}}\"?",
@@ -162,7 +168,8 @@
     "database_error": "Database error",
     "forbidden": "You do not have permission to do that",
     "no_workspace": "You are not in any workspace yet",
-    "workspace_changed": "This page belongs to another workspace. Reloading..."
+    "workspace_changed": "This page belongs to another workspace. Reloading...",
+    "password_login_disabled": "Password login is turned off. Use single sign-on."
   },
   "offline": {
     "title": "Offline mode",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Create and delete accounts, and set a new password for anyone who forgot theirs. There is no self-service sign-up: an administrator sets the password and hands it to the person. A new account can also be made an administrator.",
     "admin_about_workspaces": "Manage every workspace: add and remove people, change its name and icon, or delete it, even one they are not in.",
     "admin_about_privacy": "Cannot see other people's lists unless they join the workspace. After joining they appear in its member list.",
-    "admin_about_first": "The first account, created from ADMIN_USER, is an administrator."
+    "admin_about_first": "The first account, created from ADMIN_USER, is an administrator.",
+    "sso_badge": "SSO",
+    "sso_account": "You sign in with single sign-on. Your password is managed by your identity provider."
   }
 }

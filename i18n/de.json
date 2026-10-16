@@ -112,7 +112,13 @@
     "error_rate_limited": "Zu viele Anmeldeversuche. Bitte versuchen Sie es später erneut.",
     "username": "Benutzername",
     "username_placeholder": "Dein Benutzername",
-    "error_invalid_account": "Ungültiger Benutzername oder ungültiges Passwort"
+    "error_invalid_account": "Ungültiger Benutzername oder ungültiges Passwort",
+    "sso": "Mit SSO anmelden",
+    "or": "oder",
+    "error_oidc_failed": "Die Anmeldung per Single Sign-on ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "error_oidc_state": "Der Anmeldeversuch ist abgelaufen oder wurde nicht hier gestartet. Bitte versuchen Sie es erneut.",
+    "error_oidc_unavailable": "Single Sign-on ist gerade nicht verfügbar. Versuchen Sie es gleich noch einmal.",
+    "error_oidc_no_account": "Mit dieser Anmeldung ist kein Konto verknüpft. Bitte einen Administrator, eines anzulegen."
   },
   "confirm": {
     "delete_item": "\"{{name}}\" löschen?",
@@ -162,7 +168,8 @@
     "database_error": "Datenbankfehler",
     "forbidden": "Dazu hast du keine Berechtigung",
     "no_workspace": "Du gehörst noch zu keiner Gruppe",
-    "workspace_changed": "Diese Seite gehört zu einer anderen Gruppe. Wird neu geladen..."
+    "workspace_changed": "Diese Seite gehört zu einer anderen Gruppe. Wird neu geladen...",
+    "password_login_disabled": "Die Anmeldung mit Passwort ist deaktiviert. Nutze Single Sign-on."
   },
   "offline": {
     "title": "Offline-Modus",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Können Konten erstellen und löschen sowie ein neues Passwort für alle festlegen, die ihres vergessen haben. Es gibt keine Selbstregistrierung: Ein Administrator legt das Passwort fest und gibt es an die Person weiter. Ein neues Konto kann auch zum Administrator gemacht werden.",
     "admin_about_workspaces": "Können alle Gruppen verwalten: Personen hinzufügen und entfernen, Name und Symbol ändern oder die Gruppe löschen, auch wenn sie selbst nicht dazugehören.",
     "admin_about_privacy": "Können die Listen anderer erst sehen, wenn sie der Gruppe beitreten. Nach dem Beitritt erscheinen sie in der Mitgliederliste.",
-    "admin_about_first": "Das erste Konto, angelegt aus ADMIN_USER, ist ein Administrator."
+    "admin_about_first": "Das erste Konto, angelegt aus ADMIN_USER, ist ein Administrator.",
+    "sso_badge": "SSO",
+    "sso_account": "Du meldest dich per Single Sign-on an. Dein Passwort verwaltet dein Identitätsanbieter."
   }
 }

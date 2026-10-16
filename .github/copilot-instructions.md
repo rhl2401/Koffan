@@ -18,6 +18,7 @@ main.go              # Entry point: init → DB → templates → routes → ser
 api/                 # REST API v1 (enabled via API_TOKEN env var)
 db/                  # SQLite schema, migrations, queries (db.go + queries.go)
 handlers/            # Route handlers (auth, lists, items, sections, ws, workspaces, etc.); routes behind auth in routes.go
+oidc/                # OpenID Connect client: provider registry (one provider today), discovery, PKCE flow cookie
 i18n/                # Locale JSON files + Go loader (locales.go)
 static/              # JS assets (app.js, offline-storage.js, sw.js)
 templates/           # Go HTML templates + partials/
@@ -51,6 +52,7 @@ CGO_ENABLED=1 go build -ldflags "-X shopping-list/handlers.AppVersion=$VERSION" 
 | `MULTI_USER` | `false` | Exactly `true` enables accounts and workspaces (see below) |
 | `ADMIN_USER` | `admin` | With `MULTI_USER`: first administrator, created with `APP_PASSWORD` on first start |
 | `API_WORKSPACE_ID` | `1` | With `MULTI_USER`: workspace the REST API token works on |
+| `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | *(unset)* | With `MULTI_USER`: single sign-on through an OpenID Connect provider (`oidc/` package, `handlers/oidc.go`); more `OIDC_*` tuning in the README |
 | `DEFAULT_LANG` | `en` | Fallback UI language |
 
 ## Architecture Decisions

@@ -112,7 +112,13 @@
     "error_rate_limited": "För många inloggningsförsök. Försök igen senare.",
     "username": "Användarnamn",
     "username_placeholder": "Ditt användarnamn",
-    "error_invalid_account": "Felaktigt användarnamn eller lösenord"
+    "error_invalid_account": "Felaktigt användarnamn eller lösenord",
+    "sso": "Logga in med SSO",
+    "or": "eller",
+    "error_oidc_failed": "Single sign-on misslyckades. Försök igen.",
+    "error_oidc_state": "Inloggningsförsöket gick ut eller startades inte här. Försök igen.",
+    "error_oidc_unavailable": "Single sign-on är inte tillgängligt just nu. Försök igen om en stund.",
+    "error_oidc_no_account": "Inget konto är kopplat till den här inloggningen. Be en administratör skapa ett."
   },
   "confirm": {
     "delete_item": "Radera \"{{name}}\"?",
@@ -162,7 +168,8 @@
     "database_error": "Databasfel",
     "forbidden": "Du har inte behörighet att göra det",
     "no_workspace": "Du tillhör ingen grupp ännu",
-    "workspace_changed": "Den här sidan tillhör en annan grupp. Laddar om..."
+    "workspace_changed": "Den här sidan tillhör en annan grupp. Laddar om...",
+    "password_login_disabled": "Inloggning med lösenord är avstängd. Använd single sign-on."
   },
   "offline": {
     "title": "Offline-läge",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Skapar och raderar konton samt anger ett nytt lösenord åt den som har glömt sitt. Det finns ingen självregistrering: en administratör anger lösenordet och lämnar över det till personen. Ett nytt konto kan också göras till administratör.",
     "admin_about_workspaces": "Hanterar alla grupper: lägger till och tar bort personer, ändrar namn och ikon eller raderar gruppen, även om de själva inte tillhör den.",
     "admin_about_privacy": "Kan inte se andras listor om de inte går med i gruppen. När de har gått med syns de i gruppens medlemslista.",
-    "admin_about_first": "Det första kontot, skapat från ADMIN_USER, är en administratör."
+    "admin_about_first": "Det första kontot, skapat från ADMIN_USER, är en administratör.",
+    "sso_badge": "SSO",
+    "sso_account": "Du loggar in med single sign-on. Ditt lösenord hanteras av din identitetsleverantör."
   }
 }

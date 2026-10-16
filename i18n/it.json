@@ -112,7 +112,13 @@
     "error_rate_limited": "Troppi tentativi di accesso. Per favore riprova più tardi.",
     "username": "Nome utente",
     "username_placeholder": "Il tuo nome utente",
-    "error_invalid_account": "Nome utente o password non validi"
+    "error_invalid_account": "Nome utente o password non validi",
+    "sso": "Accedi con SSO",
+    "or": "oppure",
+    "error_oidc_failed": "L'accesso unico non è riuscito. Riprova.",
+    "error_oidc_state": "Il tentativo di accesso è scaduto o non è iniziato qui. Riprova.",
+    "error_oidc_unavailable": "L'accesso unico non è disponibile al momento. Riprova tra poco.",
+    "error_oidc_no_account": "Nessun account è collegato a questo accesso. Chiedi a un amministratore di crearne uno."
   },
   "confirm": {
     "delete_item": "Elimina \"{{name}}\"?",
@@ -162,7 +168,8 @@
     "database_error": "Errore del database",
     "forbidden": "Non hai il permesso di farlo",
     "no_workspace": "Non fai ancora parte di nessuno spazio",
-    "workspace_changed": "Questa pagina appartiene a un altro spazio. Ricaricamento..."
+    "workspace_changed": "Questa pagina appartiene a un altro spazio. Ricaricamento...",
+    "password_login_disabled": "L'accesso con password è disattivato. Usa l'accesso unico."
   },
   "offline": {
     "title": "Modalità offline",
@@ -360,6 +367,8 @@
     "admin_about_accounts": "Creano ed eliminano gli account e impostano una nuova password per chi ha dimenticato la propria. Non esiste la registrazione autonoma: un amministratore imposta la password e la consegna alla persona. Un nuovo account può anche essere reso amministratore.",
     "admin_about_workspaces": "Gestiscono ogni spazio: aggiungono e rimuovono persone, ne cambiano il nome e l'icona oppure lo eliminano, anche se non ne fanno parte.",
     "admin_about_privacy": "Non vedono le liste delle altre persone a meno che non si uniscano allo spazio. Dopo essersi uniti compaiono nell'elenco dei suoi membri.",
-    "admin_about_first": "Il primo account, creato da ADMIN_USER, è un amministratore."
+    "admin_about_first": "Il primo account, creato da ADMIN_USER, è un amministratore.",
+    "sso_badge": "SSO",
+    "sso_account": "Accedi con l'accesso unico. La tua password è gestita dal tuo provider di identità."
   }
 }
